@@ -15,7 +15,9 @@
     "emulators:persist": "firebase emulators:start --project demo-saafsaathi $([ -d emulator-data ] && echo --import=./emulator-data) --export-on-exit=./emulator-data",
     "test:rules": "firebase emulators:exec --only firestore --project demo-rules-test 'node --test tests/rules.test.mjs'",
     "local": "firebase emulators:exec --ui --project demo-saafsaathi $([ -d emulator-data ] && echo --import=./emulator-data) --export-on-exit=./emulator-data \"vite --port 5173\"",
-    "postinstall": "node scripts/copy-mediapipe.mjs"
+    "postinstall": "node scripts/copy-mediapipe.mjs",
+    "seed:live": "node scripts/seed.mjs --live",
+    "seed:clear-live": "node scripts/seed-clear-live.mjs"
   },
   "dependencies": {
     "@mediapipe/tasks-vision": "^1.0.1",

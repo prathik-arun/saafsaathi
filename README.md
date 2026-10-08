@@ -77,6 +77,8 @@ The included `.env.development` points `npm run dev` at the emulators (`VITE_USE
 | `npm run emulators` | Firebase emulators (fresh data each time) |
 | `npm run emulators:persist` | Emulators that save data to `./emulator-data` on exit |
 | `npm run seed` | Demo data for the emulators |
+| `npm run seed:live` | Same demo data in the **live** project (fake profiles only, no logins) |
+| `npm run seed:clear-live` | Remove all live demo data and recompute city totals from real activity |
 | `npm run test:rules` | Security-rules tests (anti-cheat, rubric, privacy), 24 cases |
 | `npm run lint` | ESLint |
 | `npm run build` | Type-check + production build |

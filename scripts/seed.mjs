@@ -1,5 +1,5 @@
 /**
- * Seeds the LOCAL Firebase emulators with a realistic demo dataset:
+ * Generates a realistic demo dataset and writes it to Firestore:
  *   - ~50 users spread across every city in src/lib/cities.ts
  *   - three weeks of activity (scans, quiz, streaks, reports, confirmations,
  *     cleanups), with plenty happening THIS week
@@ -8,18 +8,20 @@
  * Every user's and city's points are the sum of their pointsLog entries,
  * scored with the real rubric (src/lib/points.ts), so all screens agree.
  *
- * Usage: start the emulators, then:  npm run seed
- * It WIPES the emulators' Firestore and Auth data first, and refuses to run
- * against a real project. The output is the same every time (fixed random seed).
+ *   npm run seed        LOCAL emulators. Wipes the emulators' Firestore + Auth
+ *                       first and creates logins for every fake user.
+ *   npm run seed:live   The REAL project in .firebaserc. Fake users are profiles
+ *                       only (no logins), and every fake document's id starts with
+ *                       "seed", so `npm run seed:clear-live` removes them all.
+ *                       Uses your Firebase CLI login. Refuses to run once real
+ *                       users exist, because it would overwrite city totals.
  *
- * Demo logins (emulator only), password: saafsaathi-demo
+ * Emulator demo logins, password: saafsaathi-demo
  *   admin@saafsaathi.test (admin, Bengaluru), aarav@saafsaathi.test (Bengaluru),
  *   diya@saafsaathi.test (City Captain, Mysuru), kabir@saafsaathi.test (Mumbai),
  *   meera@saafsaathi.test (Pune). Every other fake user is <name>@saafsaathi.test too.
+ * The output is the same every time (fixed random seed).
  */
-process.env.FIRESTORE_EMULATOR_HOST ??= '127.0.0.1:8080';
-process.env.FIREBASE_AUTH_EMULATOR_HOST ??= '127.0.0.1:9099';
-
 import { initializeApp } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { getFirestore, Timestamp } from 'firebase-admin/firestore';
@@ -27,17 +29,43 @@ import { readFileSync } from 'node:fs';
 import ngeohash from 'ngeohash';
 import { CITIES } from '../src/lib/cities.ts';
 import { STARTER_QUIZ } from '../src/data/quiz.ts';
+import { Ts, accessToken, defaultProject, restClient } from './lib/firestore-rest.mjs';
 
-const PROJECT = 'demo-saafsaathi';
+const LIVE = process.argv.includes('--live');
+const PROJECT = LIVE ? defaultProject() : 'demo-saafsaathi';
 const PASSWORD = 'saafsaathi-demo';
+const ts = (ms) => new Ts(ms);
 
-if (!process.env.FIRESTORE_EMULATOR_HOST.includes('127.0.0.1') && !process.env.FIRESTORE_EMULATOR_HOST.includes('localhost')) {
-  throw new Error('Refusing to seed: not pointed at a local emulator.');
+/** Where documents go: the emulators (Admin SDK) or the live project (REST). */
+let out;
+let auth;
+if (LIVE) {
+  const rest = restClient(PROJECT, accessToken());
+  // Safety: real users' points would be overwritten by the recomputed city totals.
+  const realUsers = (await rest.list('users', ['nickname'])).filter((u) => !u.id.startsWith('seed-'));
+  if (realUsers.length && !process.argv.includes('--force')) {
+    throw new Error(`Refusing to seed: ${PROJECT} already has ${realUsers.length} real user(s). Use --force to seed anyway.`);
+  }
+  out = rest.writer();
+  console.log(`Seeding LIVE project ${PROJECT}`);
+} else {
+  process.env.FIRESTORE_EMULATOR_HOST ??= '127.0.0.1:8080';
+  process.env.FIREBASE_AUTH_EMULATOR_HOST ??= '127.0.0.1:9099';
+  initializeApp({ projectId: PROJECT });
+  auth = getAuth();
+  const fs = getFirestore();
+  const bulk = fs.bulkWriter();
+  // Convert our Ts values into Firestore Timestamps, at any depth.
+  const conv = (v) =>
+    v instanceof Ts
+      ? Timestamp.fromMillis(v.ms)
+      : Array.isArray(v)
+        ? v.map(conv)
+        : v && typeof v === 'object'
+          ? Object.fromEntries(Object.entries(v).map(([k, x]) => [k, conv(x)]))
+          : v;
+  out = { set: (path, data) => bulk.set(fs.doc(path), conv(data)), flush: () => bulk.close() };
 }
-
-initializeApp({ projectId: PROJECT });
-const auth = getAuth();
-const db = getFirestore();
 
 // ---------- helpers ----------
 /** Small deterministic random generator so every run makes the same data. */
@@ -83,15 +111,14 @@ const SEVERITY_BONUS = { low: 0, medium: 10, high: 20 };
 const cleanupPoints = (severity, createdAt, cleanedAt) =>
   POINTS.cleaned + SEVERITY_BONUS[severity] + (cleanedAt - createdAt < 71 * HOUR ? 15 : 0);
 
-// ---------- 1. wipe Firestore + Auth in the emulators ----------
-async function wipe() {
+// ---------- 1. emulators only: wipe Firestore + Auth ----------
+if (!LIVE) {
   const fsHost = process.env.FIRESTORE_EMULATOR_HOST;
   const authHost = process.env.FIREBASE_AUTH_EMULATOR_HOST;
   await fetch(`http://${fsHost}/emulator/v1/projects/${PROJECT}/databases/(default)/documents`, { method: 'DELETE' });
   await fetch(`http://${authHost}/emulator/v1/projects/${PROJECT}/accounts`, { method: 'DELETE' });
+  console.log('Wiped emulator Firestore + Auth');
 }
-await wipe();
-console.log('Wiped emulator Firestore + Auth');
 
 // ---------- 2. users ----------
 const DEMO = [
@@ -122,9 +149,14 @@ NAMES.forEach((name, i) => {
   });
 });
 
-for (const p of people) {
-  const user = await auth.createUser({ email: p.email, password: PASSWORD, displayName: p.nickname });
-  p.uid = user.uid;
+for (const [i, p] of people.entries()) {
+  if (LIVE) {
+    // Live: profiles only, no logins (the password above is public in the repo).
+    p.uid = `seed-user-${String(i).padStart(2, '0')}`;
+    if (p.role === 'admin') p.role = 'member';
+  } else {
+    p.uid = (await auth.createUser({ email: p.email, password: PASSWORD, displayName: p.nickname })).uid;
+  }
   const city = CITIES.find((c) => c.id === p.cityId);
   p.locality = p.email.startsWith('aarav') || p.email.startsWith('admin') ? 'Indiranagar' : pick(city.localities).name;
   p.logs = [];
@@ -134,12 +166,11 @@ for (const p of people) {
 const byCity = (cityId) => people.filter((p) => p.cityId === cityId);
 console.log(`Created ${people.length} users`);
 
-const writer = db.bulkWriter();
 const log = (p, action, points, refId, cityId, at) => {
   const id = `${p.uid}_${action}_${refId}`.replace(/[^A-Za-z0-9_-]/g, '-');
-  const entry = { uid: p.uid, cityId, action, points, refId, createdAt: Timestamp.fromMillis(at) };
-  p.logs.push(entry);
-  writer.set(db.doc(`pointsLog/${id}`), entry);
+  const entry = { uid: p.uid, cityId, action, points, refId, createdAt: ts(at) };
+  p.logs.push({ ...entry, at });
+  out.set(`pointsLog/${id}`, entry);
 };
 
 // ---------- 3. personal activity: scans, quiz, streaks (home city) ----------
@@ -155,9 +186,9 @@ for (const p of people) {
       const at = timeOnDay(d);
       const category = pick(CATS);
       const corrected = chance(0.12);
-      writer.set(db.collection('scans').doc(), {
+      out.set(`scans/seed-scan-${p.uid}-${d}-${k}`, {
         uid: p.uid, cityId: p.cityId, category, aiCategory: corrected ? pick(CATS) : category,
-        confidence: Math.round((0.7 + rand() * 0.29) * 1000) / 1000, corrected, source: 'phone', createdAt: Timestamp.fromMillis(at),
+        confidence: Math.round((0.7 + rand() * 0.29) * 1000) / 1000, corrected, source: 'phone', createdAt: ts(at),
       });
       if (category === 'notwaste' || k >= 20) continue;
       log(p, 'scan', POINTS.scan, `seed-${d}-${k}`, p.cityId, at);
@@ -185,7 +216,7 @@ const PNG = Object.fromEntries(
   ['dump', 'bin', 'drain', 'littering', 'clean'].map((f) => [f, `data:image/png;base64,${readFileSync(`scripts/seed-assets/${f}.png`).toString('base64')}`]),
 );
 function savePhoto(id, file, uid, at) {
-  writer.set(db.doc(`photos/${id}`), { uid, data: PNG[file], createdAt: Timestamp.fromMillis(at) });
+  out.set(`photos/${id}`, { uid, data: PNG[file], createdAt: ts(at) });
   return `photo:${id}`;
 }
 
@@ -230,7 +261,7 @@ for (const r of reports) {
   let verifiedAt = null;
   chosen.forEach((c, k) => {
     const at = Math.min(NOW - 60000, r.createdAt + (k + 1) * randInt(1, 10) * HOUR);
-    writer.set(db.doc(`reports/${id}/confirmations/${c.uid}`), { createdAt: Timestamp.fromMillis(at) });
+    out.set(`reports/${id}/confirmations/${c.uid}`, { createdAt: ts(at) });
     log(c, 'confirm', POINTS.confirm, id, r.city.id, at);
     c.stats.confirms++;
     if (k === 2) verifiedAt = at;
@@ -248,7 +279,7 @@ for (const r of reports) {
 
   const imageUrl = savePhoto(`${id}_before`, PHOTO[r.type], reporter.uid, r.createdAt);
   const afterImageUrl = status === 'cleaned' ? savePhoto(`${id}_after`, 'clean', cleaner.uid, cleanedAt) : null;
-  writer.set(db.doc(`reports/${id}`), {
+  out.set(`reports/${id}`, {
     uid: reporter.uid,
     nickname: reporter.nickname,
     cityId: r.city.id,
@@ -268,9 +299,9 @@ for (const r of reports) {
     status,
     confirmCount,
     flagged: false,
-    createdAt: Timestamp.fromMillis(r.createdAt),
-    verifiedAt: status !== 'open' ? Timestamp.fromMillis(verifiedAt ?? r.createdAt + 6 * HOUR) : null,
-    cleanedAt: cleanedAt ? Timestamp.fromMillis(cleanedAt) : null,
+    createdAt: ts(r.createdAt),
+    verifiedAt: status !== 'open' ? ts(verifiedAt ?? r.createdAt + 6 * HOUR) : null,
+    cleanedAt: cleanedAt ? ts(cleanedAt) : null,
     cleanedBy: cleaner?.uid ?? null,
     reporterBonusClaimed: true,
   });
@@ -286,8 +317,7 @@ const BADGE_RULES = [
   ['streak7', (p) => p.streakDays >= 7],
   ['quizWhiz', (p) => p.stats.quizCorrect >= 25],
 ];
-const sum = (logs, from, to = Infinity) =>
-  logs.filter((l) => l.createdAt.toMillis() >= from && l.createdAt.toMillis() < to).reduce((s, l) => s + l.points, 0);
+const sum = (logs, from, to = Infinity) => logs.filter((l) => l.at >= from && l.at < to).reduce((s, l) => s + l.points, 0);
 
 for (const p of people) {
   // Current streak: consecutive active days ending today or yesterday.
@@ -296,8 +326,8 @@ for (const p of people) {
   for (let d = start; p.activeDays.has(d); d++) streak++;
   p.streakDays = streak;
   const lastActive = [...p.activeDays].sort((a, b) => a - b)[0];
-  const todayLogs = p.logs.filter((l) => istDate(l.createdAt.toMillis()) === istDate(NOW));
-  writer.set(db.doc(`users/${p.uid}`), {
+  const todayLogs = p.logs.filter((l) => istDate(l.at) === istDate(NOW));
+  out.set(`users/${p.uid}`, {
     nickname: p.nickname,
     ageGroup: p.ageGroup,
     cityId: p.cityId,
@@ -320,7 +350,7 @@ for (const p of people) {
     joinedChallenges: [],
     lastLogId: '',
     cityChangedAt: null,
-    createdAt: Timestamp.fromMillis(NOW - randInt(21, 60) * DAY),
+    createdAt: ts(NOW - randInt(21, 60) * DAY),
   });
 }
 
@@ -328,7 +358,7 @@ const allLogs = people.flatMap((p) => p.logs);
 const activeCities = new Set([...people.map((p) => p.cityId), ...allLogs.map((l) => l.cityId)]);
 for (const cityId of activeCities) {
   const logs = allLogs.filter((l) => l.cityId === cityId);
-  writer.set(db.doc(`cities/${cityId}`), {
+  out.set(`cities/${cityId}`, {
     name: CITIES.find((c) => c.id === cityId).name.en,
     colour: cityColour(cityId),
     points: sum(logs, 0),
@@ -346,7 +376,7 @@ for (const cityId of activeCities) {
 for (const q of STARTER_QUIZ) {
   for (const lang of ['en', 'hi', 'kn']) {
     const x = q.text[lang];
-    writer.set(db.doc(`quizQuestions/${q.id}-${lang}`), { question: x.q, options: x.options, answerIndex: q.answerIndex, explanation: x.why, language: lang });
+    out.set(`quizQuestions/${q.id}-${lang}`, { question: x.q, options: x.options, answerIndex: q.answerIndex, explanation: x.why, language: lang });
   }
 }
 const challenges = [
@@ -355,14 +385,14 @@ const challenges = [
   { title: 'Get 1 spot cleaned', description: 'Clean up (or get cleaned) one reported spot.', action: 'cleaned', target: 1, rewardPoints: 50 },
 ];
 challenges.forEach((c, i) =>
-  writer.set(db.doc(`challenges/starter-${WEEK}-${i}`), {
+  out.set(`challenges/starter-${WEEK}-${i}`, {
     ...c,
-    startDate: Timestamp.fromMillis(WEEK_START),
-    endDate: Timestamp.fromMillis(WEEK_START + 7 * DAY - 1000),
+    startDate: ts(WEEK_START),
+    endDate: ts(WEEK_START + 7 * DAY - 1000),
   }),
 );
 
-await writer.close();
+await out.flush();
 
 const ranking = [...activeCities]
   .map((id) => [id, sum(allLogs.filter((l) => l.cityId === id), WEEK_START)])
@@ -371,5 +401,5 @@ const ranking = [...activeCities]
   .map(([id, pts]) => `${id} ${pts}`)
   .join(', ');
 console.log(`Wrote ${allLogs.length} points-log entries. This week's top cities: ${ranking}`);
-console.log(`Done. Demo password for all *@saafsaathi.test users: ${PASSWORD}`);
+console.log(LIVE ? 'Done. Remove it later with: npm run seed:clear-live' : `Done. Demo password for all *@saafsaathi.test users: ${PASSWORD}`);
 process.exit(0);
