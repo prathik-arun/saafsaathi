@@ -19,29 +19,25 @@
  */
 process.env.FIRESTORE_EMULATOR_HOST ??= '127.0.0.1:8080';
 process.env.FIREBASE_AUTH_EMULATOR_HOST ??= '127.0.0.1:9099';
-process.env.FIREBASE_STORAGE_EMULATOR_HOST ??= '127.0.0.1:9199';
 
 import { initializeApp } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { getFirestore, Timestamp } from 'firebase-admin/firestore';
-import { getStorage } from 'firebase-admin/storage';
-import { randomUUID } from 'node:crypto';
+import { readFileSync } from 'node:fs';
 import ngeohash from 'ngeohash';
 import { CITIES } from '../src/lib/cities.ts';
 import { STARTER_QUIZ } from '../src/data/quiz.ts';
 
 const PROJECT = 'demo-saafsaathi';
-const BUCKET = `${PROJECT}.appspot.com`;
 const PASSWORD = 'saafsaathi-demo';
 
 if (!process.env.FIRESTORE_EMULATOR_HOST.includes('127.0.0.1') && !process.env.FIRESTORE_EMULATOR_HOST.includes('localhost')) {
   throw new Error('Refusing to seed: not pointed at a local emulator.');
 }
 
-initializeApp({ projectId: PROJECT, storageBucket: BUCKET });
+initializeApp({ projectId: PROJECT });
 const auth = getAuth();
 const db = getFirestore();
-const bucket = getStorage().bucket();
 
 // ---------- helpers ----------
 /** Small deterministic random generator so every run makes the same data. */
@@ -183,13 +179,14 @@ const PHOTO = { dump: 'dump', bin: 'bin', drain: 'drain', littering: 'littering'
 const NOTES = ['', '', '', 'Behind the bus stop, been here a week', 'Near the school gate', 'Smells bad after rain', 'Next to the vegetable market', 'Blocking the footpath'];
 const REPORTS_PER_CITY = { bengaluru: 14, mumbai: 9, delhi: 9, pune: 6, chennai: 6, hyderabad: 6, kolkata: 6, mysuru: 6 };
 
-async function uploadPhoto(path, file) {
-  const token = randomUUID();
-  await bucket.upload(`scripts/seed-assets/${file}.png`, {
-    destination: path,
-    metadata: { contentType: 'image/png', metadata: { firebaseStorageDownloadTokens: token } },
-  });
-  return `http://localhost:9199/v0/b/${BUCKET}/o/${encodeURIComponent(path)}?alt=media&token=${token}`;
+// Photos live in Firestore (see src/lib/photos.ts). The demo images are small
+// PNGs, so the same data URL doubles as the thumbnail.
+const PNG = Object.fromEntries(
+  ['dump', 'bin', 'drain', 'littering', 'clean'].map((f) => [f, `data:image/png;base64,${readFileSync(`scripts/seed-assets/${f}.png`).toString('base64')}`]),
+);
+function savePhoto(id, file, uid, at) {
+  writer.set(db.doc(`photos/${id}`), { uid, data: PNG[file], createdAt: Timestamp.fromMillis(at) });
+  return `photo:${id}`;
 }
 
 const reports = [];
@@ -249,8 +246,8 @@ for (const r of reports) {
     log(reporter, 'cleanedReporter', POINTS.cleanedReporter, id, r.city.id, cleanedAt);
   }
 
-  const imageUrl = await uploadPhoto(`reports/${id}/before.jpg`, PHOTO[r.type]);
-  const afterImageUrl = status === 'cleaned' ? await uploadPhoto(`reports/${id}/after.jpg`, 'clean') : null;
+  const imageUrl = savePhoto(`${id}_before`, PHOTO[r.type], reporter.uid, r.createdAt);
+  const afterImageUrl = status === 'cleaned' ? savePhoto(`${id}_after`, 'clean', cleaner.uid, cleanedAt) : null;
   writer.set(db.doc(`reports/${id}`), {
     uid: reporter.uid,
     nickname: reporter.nickname,
@@ -260,7 +257,9 @@ for (const r of reports) {
     aiType: r.type,
     aiConfidence: Math.round((0.6 + rand() * 0.38) * 1000) / 1000,
     imageUrl,
+    thumbUrl: PNG[PHOTO[r.type]],
     afterImageUrl,
+    afterThumbUrl: afterImageUrl ? PNG.clean : null,
     lat: r.lat,
     lng: r.lng,
     geohash: ngeohash.encode(r.lat, r.lng, 7),

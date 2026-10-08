@@ -97,8 +97,12 @@ export interface ReportDoc {
   severity: Severity;
   aiType: ReportType | null;
   aiConfidence: number;
+  /** "photo:<id>" reference to the full photo in the photos collection (src/lib/photos.ts). */
   imageUrl: string;
+  /** Small JPEG data URL for lists and the map. */
+  thumbUrl: string;
   afterImageUrl: string | null;
+  afterThumbUrl: string | null;
   lat: number;
   lng: number;
   geohash: string;
@@ -144,8 +148,8 @@ export interface QuizQuestionDoc {
 
 export interface CorrectionDoc {
   uid: string;
+  /** "correction:<id>" reference to the photo in correctionPhotos. */
   imageUrl: string;
-  imagePath: string;
   aiCategory: WasteLabel;
   userCategory: WasteLabel;
   createdAt: Timestamp;

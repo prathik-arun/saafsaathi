@@ -16,8 +16,8 @@ import {
   where,
   writeBatch,
 } from 'firebase/firestore';
-import { deleteObject, ref } from 'firebase/storage';
-import { auth, db, storage } from '../../lib/firebase';
+import { auth, db } from '../../lib/firebase';
+import { deletePhoto } from '../../lib/photos';
 import { cityColourVar, findCity, tokenValue } from '../../lib/cities';
 import type { AgeGroup, Lang, UserDoc } from '../../lib/types';
 
@@ -87,11 +87,6 @@ export async function changeCity(uid: string, from: string, to: string, locality
   await batch.commit();
 }
 
-/** Delete a Storage file, ignoring "not found". */
-async function deleteFile(path: string) {
-  await deleteObject(ref(storage, path)).catch(() => undefined);
-}
-
 /**
  * Delete my account: my reports and their photos, my scans, my corrections,
  * my points log and my profile, then the login itself.
@@ -101,11 +96,11 @@ export async function deleteAccount(uid: string, cityId: string): Promise<void> 
 
   const reports = await mine('reports');
   for (const r of reports.docs) {
-    await deleteFile(`reports/${r.id}/before.jpg`);
-    await deleteFile(`reports/${r.id}/after.jpg`);
+    await deletePhoto(r.data().imageUrl);
+    await deletePhoto(r.data().afterImageUrl);
   }
   const corrections = await mine('corrections');
-  for (const c of corrections.docs) await deleteFile(c.data().imagePath);
+  for (const c of corrections.docs) await deletePhoto(c.data().imageUrl);
 
   // Delete documents in batches of up to 400 writes.
   const toDelete = [...reports.docs, ...(await mine('scans')).docs, ...corrections.docs].map((d) => d.ref);

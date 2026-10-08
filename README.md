@@ -24,7 +24,7 @@ Everything runs on free tiers, and the AI runs **in the browser**, so photos use
 | Styling | Tailwind CSS v4, design tokens as CSS variables in `src/styles/tokens.css` |
 | PWA | vite-plugin-pwa (installable, offline cache, service worker) |
 | Routing | React Router 6 |
-| Backend | Firebase Auth, Cloud Firestore, Cloud Storage, Hosting |
+| Backend | Firebase Auth, Cloud Firestore, Hosting: all on the free Spark plan, no billing card |
 | AI runtime | TensorFlow.js (loads Google Teachable Machine exports) |
 | Face check | MediaPipe Face Detector (`@mediapipe/tasks-vision`) |
 | Map | Leaflet + react-leaflet + OpenStreetMap, leaflet.markercluster, leaflet.heat |
@@ -47,7 +47,7 @@ npm install
 npm install -g firebase-tools   # if you don't have it
 ```
 
-1. **Start the Firebase emulators** (Auth, Firestore, Storage) in one terminal:
+1. **Start the Firebase emulators** (Auth, Firestore) in one terminal:
    ```bash
    npm run emulators
    ```
@@ -85,7 +85,7 @@ The included `.env.development` points `npm run dev` at the emulators (`VITE_USE
 
 Copy `.env.example` to `.env.production` and fill in the values from
 *Firebase console → Project settings → Your apps → Web app*. These are public web-config
-values, not secrets; security comes from `firestore.rules` and `storage.rules`.
+values, not secrets; security comes from `firestore.rules`.
 
 | Variable | Meaning |
 |---|---|
@@ -97,17 +97,20 @@ values, not secrets; security comes from `firestore.rules` and `storage.rules`.
 1. Create a project at https://console.firebase.google.com.
 2. **Authentication** → enable *Email/Password* and *Google*.
 3. **Firestore** → create database (production mode).
-4. **Storage** → create the default bucket. *(Check the plan requirement in the console: newer projects may need the Blaze plan for Storage.)*
-5. Put the web config in `.env.production` (copy `.env.example`), with `VITE_USE_EMULATORS=false`.
-6. `firebase login`, then `firebase use --add` and pick the project.
-7. `npm run deploy` (deploys Hosting, Firestore rules + indexes, and Storage rules).
-8. **Make yourself admin:** sign up in the app, then in Firestore open `users/<your uid>` and set `role` to `admin`.
-9. In the app: *Profile → Admin → Challenges & quiz → Load starter quiz & this week's challenges*.
-10. For the admin "Corrections (ZIP)" download, allow the browser to read Storage once:
-    ```bash
-    echo '[{"origin":["*"],"method":["GET"],"maxAgeSeconds":3600}]' > cors.json
-    gsutil cors set cors.json gs://<your-bucket>
-    ```
+4. Put the web config in `.env.production` (copy `.env.example`), with `VITE_USE_EMULATORS=false`.
+5. `firebase login`, then `firebase use --add` and pick the project.
+6. `npm run deploy` (deploys Hosting, and Firestore rules + indexes).
+7. **Make yourself admin:** sign up in the app, then in Firestore open `users/<your uid>` and set `role` to `admin`.
+8. In the app: *Profile → Admin → Challenges & quiz → Load starter quiz & this week's challenges*.
+
+
+## Where photos are stored
+
+Report and correction photos are saved **in Firestore**, not Cloud Storage: Cloud Storage now
+requires Firebase's paid Blaze plan (a billing card), which the PRD rules out. Each photo is
+compressed to ~300 KB and saved as one document (`photos/<reportId>_before`, `_after`), and each
+report carries a ~5 KB thumbnail for lists and the map. The free tier's 1 GB holds roughly
+2,500 photos. See `src/lib/photos.ts`.
 
 ## The AI models
 
@@ -219,7 +222,7 @@ public/models/    waste-sorter/, spot-detector/, face/
 public/mediapipe/ MediaPipe WebAssembly runtime (served locally, no outside calls)
 scripts/          seed.mjs, make-placeholder-models.mjs
 tests/            rules.test.mjs
-firestore.rules  storage.rules  firestore.indexes.json  firebase.json
+firestore.rules  firestore.indexes.json  firebase.json
 ```
 
 ## Phase 2: Smart Bin
@@ -238,7 +241,7 @@ ready for a `/bin` Bin Station page that talks to the ESP32 over Web Serial.
 | typescript, eslint, typescript-eslint | Apache 2.0 / MIT | Code quality |
 | tailwindcss, @tailwindcss/vite | MIT | Styling |
 | vite-plugin-pwa (Workbox) | MIT | Offline + installable app |
-| firebase | Apache 2.0 | Auth, database, storage, hosting |
+| firebase | Apache 2.0 | Auth, database (incl. photos), hosting |
 | @tensorflow/tfjs | Apache 2.0 | Running the AI models in the browser |
 | @mediapipe/tasks-vision + BlazeFace model | Apache 2.0 | Face check |
 | leaflet, react-leaflet, leaflet.markercluster, leaflet.heat | BSD-2 / Hippocratic / MIT | Map, clusters, hotspots |

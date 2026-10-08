@@ -4,7 +4,6 @@
  * used to retrain the Waste Sorter.
  */
 import { collection, getDocs, query, Timestamp, where } from 'firebase/firestore';
-import { getBlob, ref } from 'firebase/storage';
 import JSZip from 'jszip';
 import { useEffect, useState } from 'react';
 import { Bar, BarChart, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
@@ -15,7 +14,8 @@ import { ErrorCard } from '../../components/ErrorCard';
 import { SkeletonCards } from '../../components/Skeleton';
 import { useToast } from '../../components/Toast';
 import { CATEGORY_META } from '../../components/meta';
-import { db, storage } from '../../lib/firebase';
+import { db } from '../../lib/firebase';
+import { photoBlob } from '../../lib/photos';
 import { toDate } from '../../lib/format';
 import { daysAgo, istDate } from '../../lib/time';
 import type { CorrectionDoc, PointsLogDoc, ReportDoc, ScanDoc, WasteLabel } from '../../lib/types';
@@ -91,7 +91,7 @@ export function StatsDashboard() {
       // One folder per label, ready to upload as Teachable Machine classes.
       for (const d of snap.docs) {
         const c = d.data() as CorrectionDoc;
-        const blob = await getBlob(ref(storage, c.imagePath));
+        const blob = await photoBlob(c.imageUrl);
         zip.file(`${c.userCategory}/${d.id}.jpg`, blob);
       }
       downloadBlob('saafsaathi-corrections.zip', await zip.generateAsync({ type: 'blob' }));

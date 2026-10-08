@@ -4,8 +4,8 @@
  * by going through the outbox.
  */
 import { addDoc, collection, doc, getDoc, serverTimestamp, updateDoc } from 'firebase/firestore';
-import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
-import { db, storage } from '../../lib/firebase';
+import { db } from '../../lib/firebase';
+import { savePhoto } from '../../lib/photos';
 import { enqueue, isNetworkError, registerOutboxHandler, type OutboxJob } from '../../lib/outbox';
 import { awardPoints, awardStreakBonus, type AwardResult } from '../../lib/points';
 import type { WasteLabel } from '../../lib/types';
@@ -87,14 +87,10 @@ registerOutboxHandler('scan', async (job: OutboxJob) => {
 /** "Share this photo to help the AI learn?" -> upload to corrections. */
 export async function shareCorrection(uid: string, photo: Blob, aiCategory: WasteLabel, userCategory: WasteLabel) {
   const id = crypto.randomUUID();
-  const imagePath = `corrections/${uid}/${id}.jpg`;
-  const r = ref(storage, imagePath);
-  await uploadBytes(r, photo, { contentType: 'image/jpeg' });
-  const imageUrl = await getDownloadURL(r);
+  const imageUrl = await savePhoto('correctionPhotos', id, photo, uid);
   await addDoc(collection(db, 'corrections'), {
     uid,
     imageUrl,
-    imagePath,
     aiCategory,
     userCategory,
     createdAt: serverTimestamp(),

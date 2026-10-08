@@ -12,8 +12,8 @@ import {
   updateDoc,
   where,
 } from 'firebase/firestore';
-import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
-import { db, storage } from '../../lib/firebase';
+import { db } from '../../lib/firebase';
+import { makeThumbnail, savePhoto } from '../../lib/photos';
 import { findCity } from '../../lib/cities';
 import { distanceMeters, geohash7, nearestCity, nearestLocality, type LatLng } from '../../lib/geo';
 import { enqueue, isNetworkError, registerOutboxHandler, type OutboxJob } from '../../lib/outbox';
@@ -35,19 +35,9 @@ export interface NewReport {
   photo: Blob;
 }
 
-/** Upload a photo (once). If it was already uploaded by an earlier try, reuse it. */
-async function uploadOnce(path: string, photo: Blob): Promise<string> {
-  const r = ref(storage, path);
-  try {
-    return await getDownloadURL(r);
-  } catch {
-    await uploadBytes(r, photo, { contentType: 'image/jpeg' });
-    return getDownloadURL(r);
-  }
-}
-
 async function saveReport(n: NewReport): Promise<AwardResult & { streakBonus: number }> {
-  const imageUrl = await uploadOnce(`reports/${n.id}/before.jpg`, n.photo);
+  const imageUrl = await savePhoto('photos', `${n.id}_before`, n.photo, n.uid);
+  const thumbUrl = await makeThumbnail(n.photo);
   const reportRef = doc(db, 'reports', n.id);
   const result = await awardPoints(n.uid, {
     action: 'report',
@@ -72,7 +62,9 @@ async function saveReport(n: NewReport): Promise<AwardResult & { streakBonus: nu
             aiType: n.aiType,
             aiConfidence: Math.round(n.aiConfidence * 1000) / 1000,
             imageUrl,
+            thumbUrl,
             afterImageUrl: null,
+            afterThumbUrl: null,
             lat: n.lat,
             lng: n.lng,
             geohash: geohash7(n),
@@ -171,7 +163,8 @@ export async function confirmReport(uid: string, reportId: string): Promise<Awar
  * Points follow the cleanup rubric: base + severity bonus + fast-cleanup bonus.
  */
 export async function markCleaned(uid: string, reportId: string, afterPhoto: Blob): Promise<AwardResult & { bonus: ReturnType<typeof cleanupPoints> }> {
-  const afterImageUrl = await uploadOnce(`reports/${reportId}/after.jpg`, afterPhoto);
+  const afterImageUrl = await savePhoto('photos', `${reportId}_after`, afterPhoto, uid);
+  const afterThumbUrl = await makeThumbnail(afterPhoto);
   const reportRef = doc(db, 'reports', reportId);
   let bonus = cleanupPoints({ severity: 'low', createdAt: null as never });
   const result = await awardPoints(uid, {
@@ -185,7 +178,7 @@ export async function markCleaned(uid: string, reportId: string, afterPhoto: Blo
       return {
         cityId: r.cityId,
         points: bonus.total,
-        write: () => tx.update(reportRef, { status: 'cleaned', afterImageUrl, cleanedAt: serverTimestamp(), cleanedBy: uid }),
+        write: () => tx.update(reportRef, { status: 'cleaned', afterImageUrl, afterThumbUrl, cleanedAt: serverTimestamp(), cleanedBy: uid }),
       };
     },
   });

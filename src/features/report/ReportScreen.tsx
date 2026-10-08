@@ -27,6 +27,7 @@ import { useProfile } from '../auth/AuthProvider';
 import { confirmReport, findDuplicate, submitReport } from './reportApi';
 import { MiniMap, PinPicker } from './PinMaps';
 import { SuccessView } from './SuccessView';
+import { ReportImage } from '../../components/ReportImage';
 
 const TYPES: ReportType[] = ['dump', 'bin', 'drain', 'littering', 'other'];
 
@@ -292,7 +293,7 @@ export default function ReportScreen() {
       <Sheet open={!!duplicate} onClose={() => setDuplicate(null)} title={t('report.duplicateTitle')}>
         {duplicate && (
           <div className="flex flex-col gap-3">
-            <img src={duplicate.imageUrl} alt={t('report.photoAlt')} className="h-44 w-full rounded-[12px] object-cover" />
+            <ReportImage src={duplicate.imageUrl} thumb={duplicate.thumbUrl} alt={t('report.photoAlt')} className="h-44 w-full rounded-[12px] object-cover" />
             <div className="flex gap-2">
               <TypeTag type={duplicate.type} />
             </div>

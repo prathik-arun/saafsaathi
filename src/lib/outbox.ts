@@ -50,7 +50,7 @@ export async function pendingCount(): Promise<number> {
 /** True for errors that mean "try again later" rather than "this job is bad". */
 export function isNetworkError(e: unknown): boolean {
   const code = (e as { code?: string })?.code ?? '';
-  return !navigator.onLine || ['unavailable', 'deadline-exceeded', 'storage/retry-limit-exceeded', 'storage/unknown'].some((c) => code.includes(c));
+  return !navigator.onLine || ['unavailable', 'deadline-exceeded'].some((c) => code.includes(c));
 }
 
 /** Try to send every queued job, oldest first. */

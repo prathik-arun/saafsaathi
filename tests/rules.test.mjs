@@ -151,7 +151,7 @@ describe('city rubric', () => {
   const clean = (db, points, cityId = 'mysuru') =>
     awardBatch(db, {
       action: 'cleaned', refId: 'r1', points, cityId,
-      extra: (b) => b.update(doc(db, 'reports/r1'), { status: 'cleaned', cleanedBy: 'alice', afterImageUrl: 'x', cleanedAt: serverTimestamp() }),
+      extra: (b) => b.update(doc(db, 'reports/r1'), { status: 'cleaned', cleanedBy: 'alice', afterImageUrl: 'photo:r1_after', afterThumbUrl: 'data:image/jpeg;base64,x', cleanedAt: serverTimestamp() }),
     });
 
   it('scan points must go to my home city', async () => {
@@ -178,5 +178,24 @@ describe('city rubric', () => {
     const db = env.authenticatedContext('alice').firestore();
     await assertFails(clean(db, 65));
     await assertSucceeds(clean(db, 50));
+  });
+});
+
+describe('photos', () => {
+  const photo = (uid, data = 'data:image/jpeg;base64,AAAA') => ({ uid, data, createdAt: serverTimestamp() });
+  it('lets me save my own photo once', async () => {
+    const db = env.authenticatedContext('alice').firestore();
+    await assertSucceeds(setDoc(doc(db, 'photos/r9_before'), photo('alice')));
+    await assertFails(setDoc(doc(db, 'photos/r9_before'), photo('alice')));
+  });
+  it('blocks photos saved in someone else\'s name or that are not images', async () => {
+    const db = env.authenticatedContext('alice').firestore();
+    await assertFails(setDoc(doc(db, 'photos/r9_before'), photo('bob')));
+    await assertFails(setDoc(doc(db, 'photos/r9_before'), photo('alice', 'hello')));
+  });
+  it('keeps correction photos private to their owner', async () => {
+    await env.withSecurityRulesDisabled((ctx) => setDoc(doc(ctx.firestore(), 'correctionPhotos/c1'), { uid: 'alice', data: 'x' }));
+    await assertSucceeds(getDoc(doc(env.authenticatedContext('alice').firestore(), 'correctionPhotos/c1')));
+    await assertFails(getDoc(doc(env.authenticatedContext('bob').firestore(), 'correctionPhotos/c1')));
   });
 });

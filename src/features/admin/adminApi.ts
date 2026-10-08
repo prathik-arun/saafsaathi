@@ -14,8 +14,8 @@ import {
   updateDoc,
   writeBatch,
 } from 'firebase/firestore';
-import { deleteObject, ref } from 'firebase/storage';
-import { db, storage } from '../../lib/firebase';
+import { db } from '../../lib/firebase';
+import { deletePhoto } from '../../lib/photos';
 import { pointsLogId } from '../../lib/points';
 import { weekId } from '../../lib/time';
 import type { ChallengeDoc, CityDoc, PointsLogDoc, Role, UserDoc } from '../../lib/types';
@@ -68,9 +68,8 @@ export async function reversePoints(logId: string): Promise<void> {
 /** Remove a report and its photos; optionally reverse the reporter's +20. */
 export async function removeReport(id: string, reporterUid: string, reverse: boolean): Promise<void> {
   if (reverse) await reversePoints(pointsLogId(reporterUid, 'report', id));
-  await Promise.all(
-    ['before.jpg', 'after.jpg'].map((f) => deleteObject(ref(storage, `reports/${id}/${f}`)).catch(() => undefined)),
-  );
+  const report = (await getDoc(doc(db, 'reports', id))).data();
+  await Promise.all([deletePhoto(report?.imageUrl), deletePhoto(report?.afterImageUrl)]);
   await deleteDoc(doc(db, 'reports', id));
 }
 

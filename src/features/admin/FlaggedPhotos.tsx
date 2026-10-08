@@ -9,6 +9,7 @@ import { SkeletonCards } from '../../components/Skeleton';
 import { useToast } from '../../components/Toast';
 import { useRecentReports } from '../map/useReports';
 import { approvePhoto, removeReport } from './adminApi';
+import { ReportImage } from '../../components/ReportImage';
 
 export function FlaggedPhotos() {
   const { t } = useTranslation();
@@ -37,7 +38,7 @@ export function FlaggedPhotos() {
     <div className="flex flex-col gap-3">
       {flagged.map((r) => (
         <Card key={r.id} className="flex flex-col gap-3 p-3">
-          <img src={r.imageUrl} alt={t('report.photoAlt')} className="h-56 w-full rounded-[12px] object-cover" />
+          <ReportImage src={r.imageUrl} thumb={r.thumbUrl} alt={t('report.photoAlt')} className="h-56 w-full rounded-[12px] object-cover" />
           <p className="t-small text-muted">
             {r.locality} · {r.nickname}
           </p>

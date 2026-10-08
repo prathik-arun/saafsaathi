@@ -11,7 +11,6 @@ import {
   persistentLocalCache,
   persistentMultipleTabManager,
 } from 'firebase/firestore';
-import { connectStorageEmulator, getStorage } from 'firebase/storage';
 
 const env = import.meta.env;
 
@@ -32,13 +31,10 @@ export const db = initializeFirestore(firebaseApp, {
   localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
 });
 
-export const storage = getStorage(firebaseApp);
-
 export const usingEmulators = env.VITE_USE_EMULATORS === 'true';
 
 if (usingEmulators) {
   const host = window.location.hostname;
   connectAuthEmulator(auth, `http://${host}:9099`, { disableWarnings: true });
   connectFirestoreEmulator(db, host, 8080);
-  connectStorageEmulator(storage, host, 9199);
 }

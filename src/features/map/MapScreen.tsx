@@ -29,6 +29,7 @@ import { loadLeafletPlugins } from './leafletPlugins';
 import { ClusteredMarkers, FlyTo, HeatLayer } from './MapLayers';
 import { meIcon, TILE_ATTRIBUTION, TILE_URL } from './markers';
 import { useRecentReports } from './useReports';
+import { ReportImage } from '../../components/ReportImage';
 
 type Filter = 'all' | 'open' | 'cleaned' | 'dump' | 'drain' | 'bin' | 'mine';
 const FILTERS: Filter[] = ['all', 'open', 'cleaned', 'dump', 'drain', 'bin', 'mine'];
@@ -129,7 +130,7 @@ export default function MapScreen() {
                 className={`flex gap-3 p-3 transition-colors hover:border-primary ${selected?.id === r.id ? 'border-primary bg-primary-soft' : ''}`}
               >
                 {!r.flagged ? (
-                  <img src={r.imageUrl} alt="" className="h-16 w-16 shrink-0 rounded-[12px] object-cover" loading="lazy" />
+                  <ReportImage src={r.imageUrl} thumb={r.thumbUrl} thumbOnly alt="" className="h-16 w-16 shrink-0 rounded-[12px] object-cover" loading="lazy" />
                 ) : (
                   <div className="h-16 w-16 shrink-0 rounded-[12px] bg-skeleton" />
                 )}
@@ -154,7 +155,7 @@ export default function MapScreen() {
     <div className="flex flex-col gap-3">
       <div className="flex gap-3">
         {!selected.flagged ? (
-          <img src={selected.imageUrl} alt="" className="h-20 w-20 shrink-0 rounded-[12px] object-cover" />
+          <ReportImage src={selected.imageUrl} thumb={selected.thumbUrl} thumbOnly alt="" className="h-20 w-20 shrink-0 rounded-[12px] object-cover" />
         ) : (
           <div className="h-20 w-20 shrink-0 rounded-[12px] bg-skeleton" />
         )}

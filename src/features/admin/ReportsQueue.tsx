@@ -18,6 +18,7 @@ import { useProfile } from '../auth/AuthProvider';
 import { useRecentReports } from '../map/useReports';
 import { adminMarkCleaned, removeReport, verifyReport } from './adminApi';
 import { downloadCsv } from './csv';
+import { ReportImage } from '../../components/ReportImage';
 
 export function ReportsQueue() {
   const { t } = useTranslation();
@@ -97,7 +98,7 @@ export function ReportsQueue() {
       {rows.map((r) => (
         <Card key={r.id} className="flex flex-col gap-3 p-3">
           <Link to={`/r/${r.id}`} className="flex gap-3">
-            <img src={r.imageUrl} alt="" className="h-16 w-16 rounded-[12px] object-cover" loading="lazy" />
+            <ReportImage src={r.imageUrl} thumb={r.thumbUrl} thumbOnly alt="" className="h-16 w-16 rounded-[12px] object-cover" loading="lazy" />
             <div className="flex min-w-0 flex-col gap-1">
               <div className="flex flex-wrap gap-1.5">
                 <TypeTag type={r.type} />

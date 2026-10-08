@@ -216,6 +216,10 @@ service cloud.firestore {
         && request.resource.data.flagged == false
         && request.resource.data.cleanedBy == null
         && request.resource.data.afterImageUrl == null
+        && request.resource.data.afterThumbUrl == null
+        && request.resource.data.imageUrl == 'photo:' + reportId + '_before'
+        && request.resource.data.thumbUrl is string
+        && request.resource.data.thumbUrl.size() < 40000
         && request.resource.data.reporterBonusClaimed == false
         && request.resource.data.type in ['dump', 'bin', 'drain', 'littering', 'other']
         && request.resource.data.severity in ['low', 'medium', 'high']
@@ -238,12 +242,14 @@ service cloud.firestore {
       }
       // Mark as cleaned with an "after" photo (the AI check runs on the phone).
       function cleanedOk() {
-        return changedKeys().hasOnly(['status', 'afterImageUrl', 'cleanedAt', 'cleanedBy'])
+        return changedKeys().hasOnly(['status', 'afterImageUrl', 'afterThumbUrl', 'cleanedAt', 'cleanedBy'])
           && resource.data.status in ['open', 'verified']
           && request.resource.data.status == 'cleaned'
           && request.resource.data.cleanedBy == me()
           && request.resource.data.cleanedAt == request.time
-          && request.resource.data.afterImageUrl is string;
+          && request.resource.data.afterImageUrl == 'photo:' + reportId + '_after'
+          && request.resource.data.afterThumbUrl is string
+          && request.resource.data.afterThumbUrl.size() < 40000;
       }
       function flagOk() {
         return changedKeys().hasOnly(['flagged']) && request.resource.data.flagged == true;
@@ -264,6 +270,27 @@ service cloud.firestore {
           && request.resource.data.createdAt == request.time;
         allow delete: if signedIn() && (cuid == me() || isAdmin());
       }
+    }
+
+    // ---------- photos (stored in Firestore; see src/lib/photos.ts) ----------
+    // A photo is a JPEG data URL under 1 MB, saved once and never edited.
+    function photoOk() {
+      return request.resource.data.uid == me()
+        && request.resource.data.data is string
+        && request.resource.data.data.size() < 1000000
+        && request.resource.data.data.matches('^data:image/(jpeg|png|webp);base64,.*')
+        && request.resource.data.createdAt == request.time;
+    }
+    // Report photos are public (map, shared links), like the reports themselves.
+    match /photos/{photoId} {
+      allow read: if true;
+      allow create: if signedIn() && photoOk();
+      allow delete: if signedIn() && (resource.data.uid == me() || isAdmin());
+    }
+    // Photos shared to retrain the AI: only their owner and admins can see them.
+    match /correctionPhotos/{photoId} {
+      allow read, delete: if signedIn() && (resource.data.uid == me() || isAdmin());
+      allow create: if signedIn() && photoOk();
     }
 
     // ---------- content managed by admins ----------

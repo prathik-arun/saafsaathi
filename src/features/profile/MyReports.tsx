@@ -11,6 +11,7 @@ import { StatusTag, TypeTag } from '../../components/Tags';
 import { db } from '../../lib/firebase';
 import { timeAgo } from '../../lib/format';
 import type { ReportDoc, WithId } from '../../lib/types';
+import { ReportImage } from '../../components/ReportImage';
 
 export function MyReports({ uid }: { uid: string }) {
   const { t } = useTranslation();
@@ -38,7 +39,7 @@ export function MyReports({ uid }: { uid: string }) {
         <li key={r.id}>
           <button type="button" className="w-full text-left" onClick={() => navigate(`/r/${r.id}`)}>
             <Card className="flex items-center gap-3 p-3">
-              <img src={r.imageUrl} alt="" className="h-14 w-14 rounded-[12px] object-cover" loading="lazy" />
+              <ReportImage src={r.imageUrl} thumb={r.thumbUrl} thumbOnly alt="" className="h-14 w-14 rounded-[12px] object-cover" loading="lazy" />
               <div className="flex min-w-0 flex-col gap-1">
                 <div className="flex flex-wrap gap-1.5">
                   <TypeTag type={r.type} />

@@ -17,6 +17,8 @@ import { Skeleton } from '../../components/Skeleton';
 import { CityTag, SeverityTag, StatusTag, TypeTag } from '../../components/Tags';
 import { STATUS_META } from '../../components/meta';
 import { useToast } from '../../components/Toast';
+import { ReportImage } from '../../components/ReportImage';
+import { loadPhoto } from '../../lib/photos';
 import { hasFace } from '../../ai/faceCheck';
 import { CLEAN_THRESHOLD, detectSpot, loadSpotModel } from '../../ai/detectSpot';
 import { celebrate } from '../../lib/celebrate';
@@ -147,11 +149,11 @@ export default function ReportDetails() {
             </div>
           ) : report.status === 'cleaned' && report.afterImageUrl ? (
             <div className="grid grid-cols-2 gap-2">
-              <Photo url={report.imageUrl} label={t('details.before')} onZoom={setZoom} />
-              <Photo url={report.afterImageUrl} label={t('details.after')} onZoom={setZoom} />
+              <Photo url={report.imageUrl} thumb={report.thumbUrl} label={t('details.before')} onZoom={setZoom} />
+              <Photo url={report.afterImageUrl} thumb={report.afterThumbUrl ?? undefined} label={t('details.after')} onZoom={setZoom} />
             </div>
           ) : (
-            <Photo url={report.imageUrl} onZoom={setZoom} tall />
+            <Photo url={report.imageUrl} thumb={report.thumbUrl} onZoom={setZoom} tall />
           )}
         </div>
 
@@ -258,16 +260,16 @@ function Page({ children }: { children: React.ReactNode }) {
   return <div className="mx-auto min-h-dvh max-w-lg bg-bg md:max-w-2xl lg:max-w-5xl">{children}</div>;
 }
 
-function Photo({ url, label, onZoom, tall }: { url: string; label?: string; onZoom: (u: string) => void; tall?: boolean }) {
+function Photo({ url, thumb, label, onZoom, tall }: { url: string; thumb?: string; label?: string; onZoom: (u: string) => void; tall?: boolean }) {
   const { t } = useTranslation();
   return (
     <button
       type="button"
-      onClick={() => onZoom(url)}
-      className="relative block overflow-hidden rounded-[16px]"
+      onClick={() => loadPhoto(url).then(onZoom).catch(() => undefined)}
+      className="relative block w-full overflow-hidden rounded-[16px]"
       aria-label={t('details.zoom')}
     >
-      <img src={url} alt={label ?? t('report.photoAlt')} className={`w-full object-cover ${tall ? 'h-64 lg:h-[420px]' : 'h-44 lg:h-72'}`} />
+      <ReportImage src={url} thumb={thumb} alt={label ?? t('report.photoAlt')} className={`w-full object-cover ${tall ? 'h-64 lg:h-[420px]' : 'h-44 lg:h-72'}`} />
       {label && <span className="absolute top-2 left-2 rounded-full bg-black/60 px-2 py-0.5 t-caption text-white">{label}</span>}
     </button>
   );
