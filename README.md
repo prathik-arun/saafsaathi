@@ -8,6 +8,8 @@ city climb a weekly cleanliness leaderboard.
 
 Built for the College.dev *Hackathon to Solve India's Garbage Problem* (High School division).
 
+**Live app:** https://ecoclash-208a9.web.app (Firebase project `ecoclash-208a9`)
+
 - **Scan & Sort**: point the camera at an item; an AI model on the phone says Wet, Dry or Hazardous and how to dispose of it.
 - **Report a Spot**: photograph a garbage spot; the AI suggests its type and severity, a face check blocks photos with people, and the pin appears on a public map.
 - **Community**: cities compete on a weekly leaderboard. Reporting and cleaning a spot earns points for the city it's in; the map shows hotspots and cleaned spots.
