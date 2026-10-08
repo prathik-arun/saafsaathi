@@ -1,0 +1,260 @@
+@import 'tailwindcss';
+@import './styles/tokens.css';
+@import 'leaflet/dist/leaflet.css';
+@import 'leaflet.markercluster/dist/MarkerCluster.css';
+
+/* Expose the design tokens to Tailwind, e.g. bg-primary, text-muted, border-border. */
+@theme inline {
+  --color-primary: var(--primary);
+  --color-primary-pressed: var(--primary-pressed);
+  --color-primary-soft: var(--primary-soft);
+  --color-primary-light: var(--primary-light);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-text: var(--accent-text);
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-text: var(--text);
+  --color-muted: var(--text-muted);
+  --color-border: var(--border);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-error: var(--error);
+  --color-on-primary: var(--on-primary);
+  --color-skeleton: var(--skeleton);
+  --color-overlay: var(--overlay);
+  --color-camera: var(--camera-bg);
+  --color-wet: var(--wet);
+  --color-wet-soft: var(--wet-soft);
+  --color-dry: var(--dry);
+  --color-dry-soft: var(--dry-soft);
+  --color-hazardous: var(--hazardous);
+  --color-hazardous-soft: var(--hazardous-soft);
+  --color-notwaste: var(--notwaste);
+  --color-notwaste-soft: var(--notwaste-soft);
+  --color-status-open: var(--status-open);
+  --color-status-verified: var(--status-verified);
+  --color-status-cleaned: var(--status-cleaned);
+
+  --font-heading: 'Poppins', 'Noto Sans Devanagari', 'Noto Sans Kannada', system-ui, sans-serif;
+  --font-sans: 'Inter', 'Noto Sans Devanagari', 'Noto Sans Kannada', system-ui, sans-serif;
+
+  --radius-btn: 12px;
+  --radius-card: 16px;
+  --radius-sheet: 24px;
+
+  --shadow-card: var(--shadow-card);
+  --shadow-sheet: var(--shadow-sheet);
+
+  /* Type scale (PRD Section 3): size / line height */
+  --text-display: 28px;
+  --text-display--line-height: 34px;
+  --text-h1: 22px;
+  --text-h1--line-height: 28px;
+  --text-h2: 18px;
+  --text-h2--line-height: 24px;
+  --text-body: 16px;
+  --text-body--line-height: 24px;
+  --text-small: 14px;
+  --text-small--line-height: 20px;
+  --text-caption: 12px;
+  --text-caption--line-height: 16px;
+}
+
+@layer base {
+  html,
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-sans);
+    font-size: 16px;
+    line-height: 24px;
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior-y: none;
+  }
+  h1,
+  h2,
+  h3,
+  .font-heading {
+    font-family: var(--font-heading);
+  }
+  button {
+    cursor: pointer;
+  }
+  :focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+  }
+}
+
+/* Typography helpers matching the PRD type scale. */
+@utility t-display {
+  font-family: var(--font-heading);
+  font-size: 28px;
+  line-height: 34px;
+  font-weight: 700;
+}
+@utility t-h1 {
+  font-family: var(--font-heading);
+  font-size: 22px;
+  line-height: 28px;
+  font-weight: 600;
+}
+@utility t-h2 {
+  font-family: var(--font-heading);
+  font-size: 18px;
+  line-height: 24px;
+  font-weight: 600;
+}
+@utility t-body {
+  font-size: 16px;
+  line-height: 24px;
+}
+@utility t-strong {
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 600;
+}
+@utility t-small {
+  font-size: 14px;
+  line-height: 20px;
+}
+@utility t-caption {
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 500;
+}
+
+/* Motion: 150-250ms ease-out, switched off for "reduce motion". */
+@keyframes slide-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes toast-in {
+  from {
+    transform: translateY(-16px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+@keyframes pop {
+  0% {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+  70% {
+    transform: scale(1.1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+@keyframes shimmer {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+.anim-slide-up {
+  animation: slide-up 250ms ease-out;
+}
+/* Sheets slide up on phones and fade/scale in as dialogs on bigger screens. */
+.anim-sheet {
+  animation: slide-up 250ms ease-out;
+}
+@keyframes dialog-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@media (min-width: 768px) {
+  .anim-sheet {
+    animation: dialog-in 200ms ease-out;
+  }
+}
+.anim-fade-in {
+  animation: fade-in 200ms ease-out;
+}
+.anim-toast-in {
+  animation: toast-in 200ms ease-out;
+}
+.anim-pop {
+  animation: pop 400ms ease-out;
+}
+.skeleton {
+  background: var(--skeleton);
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Leaflet tweaks: dark-mode tiles and marker icons drawn by src/features/map/markers.ts */
+:root[data-theme='dark'] .leaflet-tile-pane {
+  filter: brightness(0.75) invert(1) contrast(0.9) hue-rotate(200deg) saturate(0.4);
+}
+.leaflet-container {
+  font-family: var(--font-sans);
+  background: var(--bg);
+}
+/* Keep the OpenStreetMap credit visible above the map screen's bottom controls. */
+.ss-map .leaflet-bottom {
+  bottom: 112px;
+}
+.ss-marker {
+  background: transparent;
+  border: none;
+}
+.marker-cluster-custom {
+  background: var(--primary);
+  color: var(--on-primary);
+  border: 3px solid var(--surface);
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 13px;
+  box-shadow: var(--shadow-card);
+}

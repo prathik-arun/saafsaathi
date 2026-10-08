@@ -1,0 +1,119 @@
+{
+  "categories": {
+    "wet": {
+      "en": "Put it in the green wet-waste bin. Wet waste can become compost in 6–8 weeks.",
+      "hi": "इसे हरे गीले कचरे वाले डिब्बे में डालें। गीला कचरा 6–8 हफ़्तों में खाद बन सकता है।",
+      "kn": "ಇದನ್ನು ಹಸಿರು ಹಸಿ ಕಸದ ಡಬ್ಬಿಗೆ ಹಾಕಿ. ಹಸಿ ಕಸ 6–8 ವಾರಗಳಲ್ಲಿ ಗೊಬ್ಬರವಾಗಬಹುದು."
+    },
+    "dry": {
+      "en": "Put it in the blue dry-waste bin. Rinse and dry it first so it can be recycled.",
+      "hi": "इसे नीले सूखे कचरे वाले डिब्बे में डालें। पहले धोकर सुखा लें ताकि यह रीसायकल हो सके।",
+      "kn": "ಇದನ್ನು ನೀಲಿ ಒಣ ಕಸದ ಡಬ್ಬಿಗೆ ಹಾಕಿ. ಮರುಬಳಕೆಗಾಗಿ ಮೊದಲು ತೊಳೆದು ಒಣಗಿಸಿ."
+    },
+    "hazardous": {
+      "en": "Keep it separate in the red bag. Never mix it with other waste; hand it to the hazardous-waste collector.",
+      "hi": "इसे लाल थैली में अलग रखें। इसे दूसरे कचरे में कभी न मिलाएँ; खतरनाक कचरा लेने वाले को दें।",
+      "kn": "ಇದನ್ನು ಕೆಂಪು ಚೀಲದಲ್ಲಿ ಬೇರೆಯಾಗಿ ಇಡಿ. ಬೇರೆ ಕಸದೊಂದಿಗೆ ಎಂದಿಗೂ ಬೆರೆಸಬೇಡಿ; ಅಪಾಯಕಾರಿ ಕಸ ಸಂಗ್ರಹಕಾರರಿಗೆ ಕೊಡಿ."
+    },
+    "notwaste": {
+      "en": "This doesn't look like waste. Point the camera at one item you want to throw away.",
+      "hi": "यह कचरा नहीं लगता। कैमरा उस एक चीज़ पर रखें जिसे आप फेंकना चाहते हैं।",
+      "kn": "ಇದು ಕಸದಂತೆ ಕಾಣುತ್ತಿಲ್ಲ. ನೀವು ಎಸೆಯಬೇಕಾದ ಒಂದು ವಸ್ತುವಿನ ಕಡೆ ಕ್ಯಾಮೆರಾ ಹಿಡಿಯಿರಿ."
+    }
+  },
+  "items": {
+    "banana peel": {
+      "en": "Banana peel", "hi": "केले का छिलका", "kn": "ಬಾಳೆಹಣ್ಣಿನ ಸಿಪ್ಪೆ",
+      "tip": {
+        "en": "Green bin. Peels compost quickly, so they are perfect for a home compost pot.",
+        "hi": "हरा डिब्बा। छिलके जल्दी खाद बनते हैं, घर के कम्पोस्ट के लिए बढ़िया हैं।",
+        "kn": "ಹಸಿರು ಡಬ್ಬಿ. ಸಿಪ್ಪೆಗಳು ಬೇಗ ಗೊಬ್ಬರವಾಗುತ್ತವೆ, ಮನೆ ಕಾಂಪೋಸ್ಟ್‌ಗೆ ಸೂಕ್ತ."
+      }
+    },
+    "plastic bottle": {
+      "en": "Plastic bottle", "hi": "प्लास्टिक की बोतल", "kn": "ಪ್ಲಾಸ್ಟಿಕ್ ಬಾಟಲಿ",
+      "tip": {
+        "en": "Blue bin. Empty it, crush it and keep the cap on so it is easy to recycle.",
+        "hi": "नीला डिब्बा। खाली करें, दबाएँ और ढक्कन लगा रहने दें ताकि रीसायकल आसान हो।",
+        "kn": "ನೀಲಿ ಡಬ್ಬಿ. ಖಾಲಿ ಮಾಡಿ, ಒತ್ತಿ ಚಪ್ಪಟೆ ಮಾಡಿ, ಮುಚ್ಚಳ ಇರಲಿ — ಮರುಬಳಕೆ ಸುಲಭ."
+      }
+    },
+    "battery": {
+      "en": "Battery", "hi": "बैटरी", "kn": "ಬ್ಯಾಟರಿ",
+      "tip": {
+        "en": "Hazardous. Tape the ends and drop it at an e-waste or battery collection box.",
+        "hi": "खतरनाक। सिरों पर टेप लगाएँ और ई-कचरा या बैटरी कलेक्शन बॉक्स में डालें।",
+        "kn": "ಅಪಾಯಕಾರಿ. ತುದಿಗಳಿಗೆ ಟೇಪ್ ಹಚ್ಚಿ, ಇ-ತ್ಯಾಜ್ಯ ಅಥವಾ ಬ್ಯಾಟರಿ ಸಂಗ್ರಹ ಪೆಟ್ಟಿಗೆಗೆ ಹಾಕಿ."
+      }
+    },
+    "medicine": {
+      "en": "Medicine", "hi": "दवाई", "kn": "ಔಷಧಿ",
+      "tip": {
+        "en": "Hazardous. Keep expired medicines in their strip and give them to a pharmacy take-back box.",
+        "hi": "खतरनाक। पुरानी दवाइयाँ पत्ते में ही रखें और फ़ार्मेसी के वापसी बॉक्स में दें।",
+        "kn": "ಅಪಾಯಕಾರಿ. ಅವಧಿ ಮೀರಿದ ಔಷಧಿಗಳನ್ನು ಸ್ಟ್ರಿಪ್‌ನಲ್ಲೇ ಇಟ್ಟು ಫಾರ್ಮಸಿ ಹಿಂತಿರುಗಿಸುವ ಪೆಟ್ಟಿಗೆಗೆ ಕೊಡಿ."
+      }
+    },
+    "paper": {
+      "en": "Paper", "hi": "कागज़", "kn": "ಕಾಗದ",
+      "tip": {
+        "en": "Blue bin. Keep paper dry; wet or oily paper (like pizza boxes) goes in the green bin.",
+        "hi": "नीला डिब्बा। कागज़ सूखा रखें; गीला या तेल वाला कागज़ हरे डिब्बे में जाता है।",
+        "kn": "ನೀಲಿ ಡಬ್ಬಿ. ಕಾಗದ ಒಣಗಿರಲಿ; ಒದ್ದೆ ಅಥವಾ ಎಣ್ಣೆಯ ಕಾಗದ ಹಸಿರು ಡಬ್ಬಿಗೆ."
+      }
+    },
+    "tea leaves": {
+      "en": "Tea leaves", "hi": "चाय पत्ती", "kn": "ಚಹಾ ಎಲೆ",
+      "tip": {
+        "en": "Green bin. Used tea leaves are great for plants too.",
+        "hi": "हरा डिब्बा। इस्तेमाल हुई चाय पत्ती पौधों के लिए भी अच्छी है।",
+        "kn": "ಹಸಿರು ಡಬ್ಬಿ. ಬಳಸಿದ ಚಹಾ ಎಲೆ ಗಿಡಗಳಿಗೂ ಒಳ್ಳೆಯದು."
+      }
+    },
+    "bulb": {
+      "en": "Bulb", "hi": "बल्ब", "kn": "ಬಲ್ಬ್",
+      "tip": {
+        "en": "Hazardous. CFL and tube lights contain mercury; wrap them and keep them separate.",
+        "hi": "खतरनाक। CFL और ट्यूबलाइट में पारा होता है; लपेटकर अलग रखें।",
+        "kn": "ಅಪಾಯಕಾರಿ. CFL ಮತ್ತು ಟ್ಯೂಬ್‌ಲೈಟ್‌ನಲ್ಲಿ ಪಾದರಸ ಇರುತ್ತದೆ; ಸುತ್ತಿ ಬೇರೆ ಇಡಿ."
+      }
+    }
+  },
+  "daily": [
+    {
+      "en": "Wrap used sanitary waste in paper and mark it with a red dot.",
+      "hi": "इस्तेमाल किया सैनिटरी कचरा कागज़ में लपेटें और उस पर लाल बिंदु लगाएँ।",
+      "kn": "ಬಳಸಿದ ಸ್ಯಾನಿಟರಿ ಕಸವನ್ನು ಕಾಗದದಲ್ಲಿ ಸುತ್ತಿ ಅದರ ಮೇಲೆ ಕೆಂಪು ಚುಕ್ಕೆ ಹಾಕಿ."
+    },
+    {
+      "en": "Rinse milk packets before putting them in the dry bin. They recycle much better.",
+      "hi": "दूध की थैलियाँ सूखे डिब्बे में डालने से पहले धो लें। वे बेहतर रीसायकल होती हैं।",
+      "kn": "ಹಾಲಿನ ಪ್ಯಾಕೆಟ್‌ಗಳನ್ನು ಒಣ ಡಬ್ಬಿಗೆ ಹಾಕುವ ಮೊದಲು ತೊಳೆಯಿರಿ. ಅವು ಚೆನ್ನಾಗಿ ಮರುಬಳಕೆಯಾಗುತ್ತವೆ."
+    },
+    {
+      "en": "Keep a small box for dead batteries and old bulbs. Never put them in the dustbin.",
+      "hi": "खराब बैटरी और पुराने बल्ब के लिए एक छोटा डिब्बा रखें। इन्हें कूड़ेदान में न डालें।",
+      "kn": "ಹಾಳಾದ ಬ್ಯಾಟರಿ ಮತ್ತು ಹಳೆಯ ಬಲ್ಬ್‌ಗಳಿಗೆ ಒಂದು ಸಣ್ಣ ಪೆಟ್ಟಿಗೆ ಇಡಿ. ಅವನ್ನು ಕಸದ ಡಬ್ಬಿಗೆ ಹಾಕಬೇಡಿ."
+    },
+    {
+      "en": "Flowers from pooja are wet waste. Compost them instead of throwing them in a lake.",
+      "hi": "पूजा के फूल गीला कचरा हैं। उन्हें झील में फेंकने के बजाय खाद बनाएँ।",
+      "kn": "ಪೂಜೆಯ ಹೂವುಗಳು ಹಸಿ ಕಸ. ಕೆರೆಗೆ ಎಸೆಯುವ ಬದಲು ಗೊಬ್ಬರ ಮಾಡಿ."
+    },
+    {
+      "en": "Carry a cloth bag. One bag can replace hundreds of plastic bags a year.",
+      "hi": "कपड़े का थैला साथ रखें। एक थैला साल में सैकड़ों प्लास्टिक थैलियाँ बचा सकता है।",
+      "kn": "ಬಟ್ಟೆಯ ಚೀಲ ಜೊತೆಗಿರಲಿ. ಒಂದು ಚೀಲ ವರ್ಷಕ್ಕೆ ನೂರಾರು ಪ್ಲಾಸ್ಟಿಕ್ ಚೀಲ ಉಳಿಸುತ್ತದೆ."
+    },
+    {
+      "en": "Old phones and chargers are e-waste. Give them to an authorised e-waste collector.",
+      "hi": "पुराने फ़ोन और चार्जर ई-कचरा हैं। उन्हें अधिकृत ई-कचरा संग्रहकर्ता को दें।",
+      "kn": "ಹಳೆಯ ಫೋನ್ ಮತ್ತು ಚಾರ್ಜರ್‌ಗಳು ಇ-ತ್ಯಾಜ್ಯ. ಅಧಿಕೃತ ಇ-ತ್ಯಾಜ್ಯ ಸಂಗ್ರಹಕಾರರಿಗೆ ಕೊಡಿ."
+    },
+    {
+      "en": "Don't burn leaves or plastic. The smoke is harmful; compost leaves and recycle plastic.",
+      "hi": "पत्ते या प्लास्टिक न जलाएँ। धुआँ हानिकारक है; पत्तों की खाद बनाएँ, प्लास्टिक रीसायकल करें।",
+      "kn": "ಎಲೆ ಅಥವಾ ಪ್ಲಾಸ್ಟಿಕ್ ಸುಡಬೇಡಿ. ಹೊಗೆ ಹಾನಿಕಾರಕ; ಎಲೆಗಳನ್ನು ಗೊಬ್ಬರ ಮಾಡಿ, ಪ್ಲಾಸ್ಟಿಕ್ ಮರುಬಳಕೆ ಮಾಡಿ."
+    }
+  ]
+}

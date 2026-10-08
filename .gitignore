@@ -1,0 +1,14 @@
+node_modules
+dist
+dev-dist
+.env
+.env.local
+*.log
+.firebase
+emulator-data
+.DS_Store
+.env*.local
+firestore-debug.log
+# Copied from node_modules by `npm install` (scripts/copy-mediapipe.mjs)
+public/mediapipe
+.claude/settings.local.json

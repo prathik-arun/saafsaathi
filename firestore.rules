@@ -1,0 +1,279 @@
+rules_version = '2';
+
+// SaafSaathi Firestore security rules (PRD Section 6).
+//  - Users can only write their own documents.
+//  - Points, report status and city totals only change through validated writes:
+//    every change in points must match a NEW pointsLog entry written in the same
+//    transaction, and that entry's points must match the scoring rubric.
+//  - Report/confirm/clean points go to the city the spot is in; everything else
+//    goes to the user's home city.
+//  - Only admins can verify, remove reports or recolour cities.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------- helpers ----------
+    function signedIn() { return request.auth != null; }
+    function me() { return request.auth.uid; }
+    function userPath(uid) { return /databases/$(database)/documents/users/$(uid); }
+    function logPath(id) { return /databases/$(database)/documents/pointsLog/$(id); }
+    function reportPath(id) { return /databases/$(database)/documents/reports/$(id); }
+    function isAdmin() {
+      return signedIn() && exists(userPath(me())) && get(userPath(me())).data.role == 'admin';
+    }
+    function changedKeys() { return request.resource.data.diff(resource.data).affectedKeys(); }
+
+    // Keep in sync with CITIES in src/lib/cities.ts
+    function cityIds() { return ['bengaluru', 'mysuru', 'mumbai', 'pune', 'delhi', 'chennai', 'hyderabad', 'kolkata', 'ahmedabad', 'jaipur', 'lucknow', 'kochi', 'indore', 'chandigarh', 'coimbatore', 'mangaluru', 'hubballi', 'bhopal']; }
+
+    // Keep in sync with POINTS in src/lib/points.ts ('cleaned' is checked by cleanupOk)
+    function pointsFor(action) {
+      return {
+        'scan': 5, 'report': 20, 'confirm': 5, 'cleaned': 30,
+        'cleanedReporter': 10, 'quiz': 2, 'streak': 10
+      }.get(action, -1);
+    }
+
+    // A points change is valid when it equals a brand-new pointsLog entry
+    // (created in this same write) that belongs to this user.
+    function newLog() { return getAfter(logPath(request.resource.data.lastLogId)).data; }
+    function logIsNew() {
+      return !exists(logPath(request.resource.data.lastLogId))
+        && existsAfter(logPath(request.resource.data.lastLogId));
+    }
+    function weeklyOk(log) {
+      return request.resource.data.weekId == resource.data.weekId
+        ? request.resource.data.weeklyPoints == resource.data.weeklyPoints + log.points
+        : request.resource.data.weeklyPoints == log.points;
+    }
+
+    // ---------- users ----------
+    match /users/{uid} {
+      allow read: if signedIn();
+
+      allow create: if signedIn() && me() == uid
+        && request.resource.data.role == 'member'
+        && request.resource.data.points == 0
+        && request.resource.data.weeklyPoints == 0
+        && request.resource.data.lastLogId == ''
+        && request.resource.data.cityId in cityIds()
+        && request.resource.data.nickname is string
+        && request.resource.data.nickname.size() >= 2
+        && request.resource.data.nickname.size() <= 20;
+
+      function pointsUntouched() {
+        return !changedKeys().hasAny(['points', 'weeklyPoints', 'weekId', 'lastLogId']);
+      }
+      function pointsValid() {
+        return logIsNew()
+          && newLog().uid == uid
+          && request.resource.data.points == resource.data.points + newLog().points
+          && weeklyOk(newLog());
+      }
+      // Change home city at most once every 30 days.
+      function cityChangeOk() {
+        return !('cityId' in changedKeys())
+          || (request.resource.data.cityId in cityIds()
+              && request.resource.data.cityChangedAt == request.time
+              && (resource.data.cityChangedAt == null
+                  || request.time > resource.data.cityChangedAt + duration.value(30, 'd')));
+      }
+
+      allow update: if isAdmin() || (signedIn() && me() == uid
+        && !changedKeys().hasAny(['role', 'createdAt'])
+        && (pointsUntouched() || pointsValid())
+        && cityChangeOk());
+
+      allow delete: if signedIn() && (me() == uid || isAdmin());
+    }
+
+    // ---------- cities (leaderboard) ----------
+    match /cities/{cityId} {
+      allow read: if true;
+
+      // A city appears when its first member joins (empty) or when it earns its
+      // first points (e.g. a report there); either way memberCount starts at 0.
+      allow create: if signedIn() && cityId in cityIds()
+        && request.resource.data.memberCount == 0
+        && ((request.resource.data.points == 0 && request.resource.data.weeklyPoints == 0)
+            || (logIsNew()
+                && newLog().cityId == cityId
+                && newLog().uid == me()
+                && request.resource.data.points == newLog().points
+                && request.resource.data.weeklyPoints == newLog().points));
+
+      function cityPointsValid() {
+        return changedKeys().hasOnly(['points', 'weeklyPoints', 'weekId', 'prevWeekId', 'prevWeeklyPoints', 'lastLogId'])
+          && logIsNew()
+          && newLog().cityId == cityId
+          && newLog().uid == me()
+          && request.resource.data.points == resource.data.points + newLog().points
+          && (request.resource.data.weekId == resource.data.weekId
+              ? request.resource.data.weeklyPoints == resource.data.weeklyPoints + newLog().points
+              : (request.resource.data.weeklyPoints == newLog().points
+                 && request.resource.data.prevWeekId == resource.data.weekId
+                 && request.resource.data.prevWeeklyPoints == resource.data.weeklyPoints));
+      }
+      // memberCount goes up by one when I join this city, down by one when I leave.
+      function memberCountValid() {
+        let delta = request.resource.data.memberCount - resource.data.memberCount;
+        let wasHere = exists(userPath(me())) && get(userPath(me())).data.cityId == cityId;
+        let isHere = existsAfter(userPath(me())) && getAfter(userPath(me())).data.cityId == cityId;
+        return changedKeys().hasOnly(['memberCount'])
+          && ((delta == 1 && !wasHere && isHere) || (delta == -1 && wasHere && !isHere));
+      }
+      function captainAnnouncement() {
+        return changedKeys().hasOnly(['announcement'])
+          && get(userPath(me())).data.role == 'captain'
+          && get(userPath(me())).data.cityId == cityId;
+      }
+
+      allow update: if isAdmin() || (signedIn() && (cityPointsValid() || memberCountValid() || captainAnnouncement()));
+      allow delete: if isAdmin();
+    }
+
+    // ---------- points log ----------
+    match /pointsLog/{logId} {
+      // A transaction first checks whether my log entry already exists, so I may
+      // read a missing document whose id starts with my uid.
+      allow get: if isAdmin() || (signedIn() && (resource == null ? logId.matches(me() + '_.*') : resource.data.uid == me()));
+      allow list: if signedIn() && (resource.data.uid == me() || isAdmin());
+
+      // Cleanup rubric (src/lib/points.ts): 30 + severity bonus (medium 10, high 20)
+      // + 15 if cleaned within 72 hours of being reported.
+      function cleanupOk(d) {
+        let r = getAfter(reportPath(d.refId)).data;
+        let base = 30 + {'low': 0, 'medium': 10, 'high': 20}.get(r.severity, 0);
+        return d.points == base
+          || (d.points == base + 15 && request.time < r.createdAt + duration.value(72, 'h'));
+      }
+      function amountOk(d) {
+        return d.action == 'challenge' ? d.points == get(/databases/$(database)/documents/challenges/$(d.refId)).data.rewardPoints
+          : d.action == 'cleaned' ? cleanupOk(d)
+          : d.points == pointsFor(d.action);
+      }
+      // Spot actions count for the spot's city; everything else for my home city.
+      function cityOk(d) {
+        return d.action in ['report', 'confirm', 'cleaned', 'cleanedReporter']
+          ? d.cityId == getAfter(reportPath(d.refId)).data.cityId
+          : d.cityId == getAfter(userPath(me())).data.cityId;
+      }
+      // Proof that the action really happened, checked against other documents.
+      function evidenceOk(d) {
+        return d.action == 'report' ? getAfter(reportPath(d.refId)).data.uid == me()
+          : d.action == 'confirm' ? existsAfter(/databases/$(database)/documents/reports/$(d.refId)/confirmations/$(me()))
+          : d.action == 'cleaned' ? (getAfter(reportPath(d.refId)).data.cleanedBy == me()
+                                     && getAfter(reportPath(d.refId)).data.status == 'cleaned')
+          : d.action == 'cleanedReporter' ? (get(reportPath(d.refId)).data.uid == me()
+                                             && get(reportPath(d.refId)).data.status == 'cleaned')
+          : d.action == 'challenge' ? request.time >= get(/databases/$(database)/documents/challenges/$(d.refId)).data.startDate
+          : d.action in ['scan', 'quiz', 'streak'];
+      }
+
+      allow create: if isAdmin() || (signedIn()
+        && request.resource.data.uid == me()
+        && logId == me() + '_' + request.resource.data.action + '_' + request.resource.data.refId.replace('[^A-Za-z0-9-]', '-')
+        && cityOk(request.resource.data)
+        && request.resource.data.createdAt == request.time
+        && amountOk(request.resource.data)
+        && evidenceOk(request.resource.data));
+
+      allow update: if isAdmin();
+      // Own log entries can be removed only as part of deleting the account.
+      allow delete: if isAdmin() || (signedIn() && resource.data.uid == me() && !existsAfter(userPath(me())));
+    }
+
+    // ---------- scans (classification happens on the phone; only the result is stored) ----------
+    match /scans/{scanId} {
+      allow read: if signedIn() && (resource.data.uid == me() || isAdmin());
+      allow create: if signedIn() && request.resource.data.uid == me()
+        && request.resource.data.source in ['phone', 'bin']
+        && request.resource.data.createdAt == request.time;
+      // "Wrong? Fix it" can change only the category and the corrected flag.
+      allow update: if signedIn() && resource.data.uid == me()
+        && changedKeys().hasOnly(['category', 'corrected'])
+        && request.resource.data.corrected == true;
+      allow delete: if signedIn() && (resource.data.uid == me() || isAdmin());
+    }
+
+    // ---------- corrections shared to help retrain the model ----------
+    match /corrections/{id} {
+      allow read: if signedIn() && (resource.data.uid == me() || isAdmin());
+      allow create: if signedIn() && request.resource.data.uid == me();
+      allow delete: if signedIn() && (resource.data.uid == me() || isAdmin());
+    }
+
+    // ---------- reports ----------
+    match /reports/{reportId} {
+      // Public so the map and shared WhatsApp links work. Holds no personal data
+      // beyond the reporter's nickname.
+      allow read: if true;
+
+      allow create: if signedIn()
+        && request.resource.data.uid == me()
+        && request.resource.data.cityId in cityIds()
+        && request.resource.data.status == 'open'
+        && request.resource.data.confirmCount == 0
+        && request.resource.data.flagged == false
+        && request.resource.data.cleanedBy == null
+        && request.resource.data.afterImageUrl == null
+        && request.resource.data.reporterBonusClaimed == false
+        && request.resource.data.type in ['dump', 'bin', 'drain', 'littering', 'other']
+        && request.resource.data.severity in ['low', 'medium', 'high']
+        && request.resource.data.lat is number
+        && request.resource.data.lng is number
+        && request.resource.data.note.size() <= 140
+        && request.resource.data.createdAt == request.time;
+
+      // "I see it too": +1 confirmation, auto-verified at 3.
+      function confirmOk() {
+        let confPath = /databases/$(database)/documents/reports/$(reportId)/confirmations/$(me());
+        return changedKeys().hasOnly(['confirmCount', 'status', 'verifiedAt'])
+          && request.resource.data.confirmCount == resource.data.confirmCount + 1
+          && existsAfter(confPath) && !exists(confPath)
+          && (request.resource.data.status == resource.data.status
+              || (resource.data.status == 'open'
+                  && request.resource.data.status == 'verified'
+                  && request.resource.data.confirmCount >= 3
+                  && request.resource.data.verifiedAt == request.time));
+      }
+      // Mark as cleaned with an "after" photo (the AI check runs on the phone).
+      function cleanedOk() {
+        return changedKeys().hasOnly(['status', 'afterImageUrl', 'cleanedAt', 'cleanedBy'])
+          && resource.data.status in ['open', 'verified']
+          && request.resource.data.status == 'cleaned'
+          && request.resource.data.cleanedBy == me()
+          && request.resource.data.cleanedAt == request.time
+          && request.resource.data.afterImageUrl is string;
+      }
+      function flagOk() {
+        return changedKeys().hasOnly(['flagged']) && request.resource.data.flagged == true;
+      }
+      function bonusClaimOk() {
+        return changedKeys().hasOnly(['reporterBonusClaimed'])
+          && resource.data.uid == me() && resource.data.status == 'cleaned';
+      }
+
+      allow update: if isAdmin() || (signedIn() && (confirmOk() || cleanedOk() || flagOk() || bonusClaimOk()));
+      allow delete: if signedIn() && (resource.data.uid == me() || isAdmin());
+
+      match /confirmations/{cuid} {
+        allow read: if signedIn();
+        // You cannot confirm your own report.
+        allow create: if signedIn() && cuid == me()
+          && get(reportPath(reportId)).data.uid != me()
+          && request.resource.data.createdAt == request.time;
+        allow delete: if signedIn() && (cuid == me() || isAdmin());
+      }
+    }
+
+    // ---------- content managed by admins ----------
+    match /challenges/{id} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+    match /quizQuestions/{id} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+  }
+}

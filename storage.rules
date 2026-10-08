@@ -1,0 +1,30 @@
+rules_version = '2';
+
+// Photo storage rules. Report photos are public (for the map and shared links);
+// correction photos are visible only to their owner and admins.
+service firebase.storage {
+  match /b/{bucket}/o {
+    function signedIn() { return request.auth != null; }
+    // Compressed photos are ~300 KB; anything over 1 MB or not an image is refused.
+    function isPhoto() {
+      return request.resource.size < 1024 * 1024 && request.resource.contentType.matches('image/.*');
+    }
+    function isAdmin() {
+      return signedIn()
+        && firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    match /reports/{reportId}/{file} {
+      allow read: if true;
+      // Upload once (no overwriting someone else's photo).
+      allow create: if signedIn() && file in ['before.jpg', 'after.jpg'] && isPhoto();
+      allow delete: if isAdmin()
+        || (signedIn() && firestore.get(/databases/(default)/documents/reports/$(reportId)).data.uid == request.auth.uid);
+    }
+
+    match /corrections/{uid}/{file} {
+      allow create: if signedIn() && request.auth.uid == uid && isPhoto();
+      allow read, delete: if signedIn() && (request.auth.uid == uid || isAdmin());
+    }
+  }
+}

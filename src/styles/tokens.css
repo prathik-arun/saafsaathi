@@ -1,0 +1,97 @@
+/*
+ * SaafSaathi design tokens (PRD Section 3).
+ * This is the ONLY place colours are defined. Components use them through
+ * Tailwind classes like bg-primary / text-muted (see src/index.css).
+ * The <html data-theme="light|dark"> attribute is set by src/lib/theme.ts.
+ */
+:root {
+  /* Brand and UI */
+  --primary: #0f766e;
+  --primary-pressed: #115e59;
+  --primary-soft: #ccfbf1;
+  --primary-light: #14b8a6;
+  /* Home points card gradient (white text on top) */
+  --hero-from: #0f766e;
+  --hero-to: #14b8a6;
+  --accent: #f97316;
+  --accent-soft: #ffedd5;
+  --accent-text: #c2410c; /* accent on accent-soft, AA contrast */
+  --bg: #f6f8f7;
+  --surface: #ffffff;
+  --text: #0f172a;
+  --text-muted: #64748b;
+  --border: #e2e8f0;
+  --success: #16a34a;
+  --warning: #f59e0b;
+  --error: #dc2626;
+  --on-primary: #ffffff;
+  --skeleton: #e2e8f0;
+  --overlay: rgba(15, 23, 42, 0.5);
+  --camera-bg: #000000;
+
+  /* Waste categories */
+  --wet: #16a34a;
+  --wet-soft: #dcfce7;
+  --dry: #2563eb;
+  --dry-soft: #dbeafe;
+  --hazardous: #dc2626;
+  --hazardous-soft: #fee2e2;
+  --notwaste: #64748b;
+  --notwaste-soft: #f1f5f9;
+
+  /* Report status */
+  --status-open: #f59e0b;
+  --status-verified: #f97316;
+  --status-cleaned: #16a34a;
+
+  /* City palette (each city gets one, in turn; admins can recolour a city) */
+  --city-1: #7c3aed;
+  --city-2: #d97706;
+  --city-3: #db2777;
+  --city-4: #0891b2;
+  --city-5: #2563eb;
+  --city-6: #65a30d;
+  --city-7: #c2410c;
+  --city-8: #4f46e5;
+
+  /* Depth */
+  --shadow-card: 0 1px 3px rgba(15, 23, 42, 0.08);
+  --shadow-sheet: 0 -8px 24px rgba(15, 23, 42, 0.12);
+
+  color-scheme: light;
+}
+
+:root[data-theme='dark'] {
+  --primary: #2dd4bf;
+  --primary-pressed: #14b8a6;
+  --primary-soft: #134e4a;
+  --primary-light: #0f766e;
+  --hero-from: #115e59;
+  --hero-to: #0f766e;
+  --accent: #fb923c;
+  --accent-soft: #431407;
+  --accent-text: #fdba74;
+  --bg: #0b1220;
+  --surface: #111827;
+  --text: #f1f5f9;
+  --text-muted: #94a3b8;
+  --border: #1f2937;
+  --on-primary: #042f2e;
+  --skeleton: #1f2937;
+  --overlay: rgba(0, 0, 0, 0.6);
+
+  --wet-soft: #14532d;
+  --dry-soft: #1e3a8a;
+  --hazardous-soft: #7f1d1d;
+  --notwaste-soft: #1e293b;
+  --wet: #4ade80;
+  --dry: #60a5fa;
+  --hazardous: #f87171;
+  --notwaste: #94a3b8;
+
+
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --shadow-sheet: 0 -8px 24px rgba(0, 0, 0, 0.5);
+
+  color-scheme: dark;
+}

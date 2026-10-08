@@ -1,0 +1,12 @@
+{
+  "modelName": "placeholder",
+  "placeholder": true,
+  "labels": [
+    "Wet",
+    "Dry",
+    "Hazardous",
+    "Not waste"
+  ],
+  "imageSize": 224,
+  "timeStamp": "2026-10-02T06:41:05.281Z"
+}
