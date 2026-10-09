@@ -1,0 +1,17 @@
+{
+  "name": "saafsaathi-training",
+  "private": true,
+  "type": "module",
+  "description": "Tools to collect photos and train SaafSaathi's waste and spot classifiers (run from the repo root).",
+  "scripts": {
+    "collect": "cd ../.. && node scripts/training/collect.mjs",
+    "download": "cd ../.. && node scripts/training/download.mjs",
+    "train": "cd ../.. && node scripts/training/train.mjs"
+  },
+  "dependencies": {
+    "@tensorflow/tfjs-node": "4.22.0"
+  },
+  "allowScripts": {
+    "@tensorflow/tfjs-node@4.22.0": true
+  }
+}

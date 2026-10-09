@@ -12,3 +12,5 @@ firestore-debug.log
 # Copied from node_modules by `npm install` (scripts/copy-mediapipe.mjs)
 public/mediapipe
 .claude/settings.local.json
+# Downloaded training photos (scripts/training); only the trained models are committed
+training-data

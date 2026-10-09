@@ -120,22 +120,49 @@ report carries a ~5 KB thumbnail for lists and the map. The free tier's 1 GB hol
 
 | Model | Folder | Classes |
 |---|---|---|
-| A: Waste Sorter | `public/models/waste-sorter/` | Wet, Dry, Hazardous, Not waste |
-| B: Spot Detector | `public/models/spot-detector/` | Garbage dump, Overflowing bin, Blocked drain, Clean area |
+| A: Waste Sorter (Teachable Machine slot) | `public/models/waste-sorter/` | Wet, Dry, Hazardous, Not waste |
+| B: Spot Detector (Teachable Machine slot) | `public/models/spot-detector/` | Garbage dump, Overflowing bin, Blocked drain, Clean area |
 | Face check | `public/models/face/` | MediaPipe BlazeFace (ready-made, Apache 2.0) |
 
-**Until the student's own Waste Sorter is trained, Scan & Sort uses a built-in recogniser:**
-Google's MobileNet v2 (ImageNet, 1,000 everyday objects such as bottles, fruit, cartons, phones
-and medicine) running in the browser, with a mapping from what it sees to Wet / Dry / Hazardous
-(`src/ai/imagenetWaste.ts`, model files in `public/models/imagenet/`, ~14 MB, cached after the
-first scan). It recognises common items well but has no "battery" class, and it can't know Indian
-sorting rules the way a model trained on your own photos can; when it isn't sure (< 70%) it asks.
-As soon as a trained Teachable Machine model is placed in `public/models/waste-sorter/`, the app
-uses that instead, automatically.
+### Pre-trained models (what the app uses today)
 
-The Spot Detector in `public/models/spot-detector/` is still a placeholder that only looks at
-the average colour of the photo (made by `scripts/make-placeholder-models.mjs`); it only
-pre-fills suggestions the user can change.
+Both AIs run on top of **MobileNet v2** (Google, ImageNet; `public/models/imagenet/`, ~14 MB,
+cached after first use). MobileNet turns a photo into 1,280 numbers describing what's in it, and a
+small trained classifier ("head", ~20 KB each) turns those into our classes:
+
+| Model | Folder | Classes | Photos | Accuracy (5-fold cross-validation) |
+|---|---|---|---|---|
+| Waste Sorter head | `public/models/waste-head/` | Wet, Dry, Hazardous, Not waste | 911 | **92.5%** (± 1.6) |
+| Spot Detector head | `public/models/spot-head/` | Garbage dump, Overflowing bin, Blocked drain, Clean area | 736 | **90.1%** (± 3.0) |
+
+The scanner also asks MobileNet for its own opinion (it knows 1,000 everyday objects, so it can
+name the item, e.g. "Banana peel"). If MobileNet is sure the object belongs to a *different*
+category, the app asks the user instead of guessing (`src/ai/combine.ts`). Measured the same way,
+this full logic shows an answer that is right **96.6%** of the time, asks the user for
+16% of photos and is wrong on 2.9%.
+
+**How they were trained** (`scripts/training/`, see its README section below):
+1. `collect.mjs` gathers openly licensed photos: Wikimedia Commons (food waste, peels, batteries,
+   pills, syringes, e-waste, bulbs, rooms, garbage dumps in India, overflowing bins, storm drains,
+   polluted nallahs, Indian streets) and Hugging Face datasets (household recyclables CC BY 4.0,
+   overflowing bins CC BY 4.0).
+2. `download.mjs` saves small copies (not committed; `training-data/` is ignored).
+3. `train.mjs` drops charts/posters and photos that clearly don't fit their label (checked by a
+   model that never saw them), measures accuracy with 5-fold cross-validation, then trains the final
+   classifier on all cleaned photos. Every photo used is credited in
+   [`docs/training-data-credits.md`](docs/training-data-credits.md).
+
+To retrain (e.g. after adding photos):
+```bash
+cd scripts/training && npm install && cd ../..
+node scripts/training/collect.mjs && node scripts/training/download.mjs && node scripts/training/train.mjs
+```
+
+**Limits to know:** web photos are not Indian homes. MobileNet has no "battery" class of its own, a
+newspaper can be mistaken for wet waste, and the street model has fewer drain photos than other
+classes. The best improvement is still the PRD's plan: the student photographs real local items and
+trains in Teachable Machine (below). A trained Teachable Machine model in `public/models/waste-sorter/`
+or `public/models/spot-detector/` automatically takes priority over these heads.
 
 ### Retrain and swap a model
 
@@ -150,7 +177,7 @@ pre-fills suggestions the user can change.
 4. *Train* → *Export Model* → *TensorFlow.js* → *Download*.
 5. Unzip and copy `model.json`, `weights.bin` and `metadata.json` into the model's folder,
    replacing the placeholder files. Each model should be under 5 MB.
-6. Reload the app. Scan & Sort now uses your model instead of the built-in recogniser.
+6. Reload the app. It now uses your model instead of the pre-trained heads.
 
 **Using corrections:** when users tap *Wrong? Fix it* and agree to share, the photo and the right
 label are saved. *Admin → Stats → Corrections (ZIP)* downloads them in one folder per label,
@@ -255,7 +282,9 @@ ready for a `/bin` Bin Station page that talks to the ESP32 over Web Serial.
 | vite-plugin-pwa (Workbox) | MIT | Offline + installable app |
 | firebase | Apache 2.0 | Auth, database (incl. photos), hosting |
 | @tensorflow/tfjs | Apache 2.0 | Running the AI models in the browser |
-| MobileNet v2 (ImageNet), via TF Hub | Apache 2.0 | Built-in waste recogniser until the trained model is added |
+| MobileNet v2 (ImageNet), via TF Hub | Apache 2.0 | Base model for both trained classifiers and item names |
+| Training photos: Wikimedia Commons + Hugging Face datasets | CC0 / CC BY / CC BY-SA / MIT (per photo) | Training the waste and spot classifiers; every photo listed in `docs/training-data-credits.md` |
+| @tensorflow/tfjs-node | Apache 2.0 | Training scripts only (`scripts/training`) |
 | @mediapipe/tasks-vision + BlazeFace model | Apache 2.0 | Face check |
 | leaflet, react-leaflet, leaflet.markercluster, leaflet.heat | BSD-2 / Hippocratic / MIT | Map, clusters, hotspots |
 | OpenStreetMap tiles | ODbL (© OpenStreetMap contributors) | Map background |
@@ -278,5 +307,6 @@ ready for a `/bin` Bin Station page that talks to the ESP32 over Web Serial.
 *(Fill this in before submitting. The rules require it, and judges may ask about authorship.)*
 
 - **AI tools used:** Claude Code (Anthropic) generated the first version of this codebase from the PRD: app screens, Firebase rules, points engine, translations, seed script and tests.
+  Claude Code also collected the training photos and trained the pre-trained waste and spot classifiers (`scripts/training`); see "Pre-trained models" above.
 - **What I did myself:** _e.g. trained and tested both Teachable Machine models (accuracy: __%), collected the photos, design choices, user testing with __ people, the videos…_
 - I can explain every screen, the AI pipeline and the data model in my own words.

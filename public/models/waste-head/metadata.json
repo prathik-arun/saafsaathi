@@ -1,0 +1,25 @@
+{
+  "labels": [
+    "Wet",
+    "Dry",
+    "Hazardous",
+    "Not waste"
+  ],
+  "base": "imagenet/mobilenet_v2_100_224",
+  "featureNode": "module_apply_default/MobilenetV2/Logits/AvgPool",
+  "cvAccuracy": 0.925,
+  "cvAccuracySpread": 0.016,
+  "appLogic": {
+    "shownCorrect": 0.966,
+    "askedRate": 0.164,
+    "wrongRate": 0.029
+  },
+  "photos": {
+    "Wet": 233,
+    "Dry": 260,
+    "Hazardous": 229,
+    "Not waste": 189
+  },
+  "trainedAt": "2026-10-09T16:56:56.569Z",
+  "trainedWith": "scripts/training/train.mjs"
+}

@@ -1,0 +1,20 @@
+{
+  "labels": [
+    "Garbage dump",
+    "Overflowing bin",
+    "Blocked drain",
+    "Clean area"
+  ],
+  "base": "imagenet/mobilenet_v2_100_224",
+  "featureNode": "module_apply_default/MobilenetV2/Logits/AvgPool",
+  "cvAccuracy": 0.901,
+  "cvAccuracySpread": 0.03,
+  "photos": {
+    "Garbage dump": 193,
+    "Overflowing bin": 199,
+    "Blocked drain": 173,
+    "Clean area": 171
+  },
+  "trainedAt": "2026-10-09T16:57:14.120Z",
+  "trainedWith": "scripts/training/train.mjs"
+}

@@ -2,21 +2,23 @@
  * Model A: Waste Sorter (PRD Section 5).
  * Turns a model's label scores into Wet / Dry / Hazardous / Not waste.
  *
- * Two engines, picked automatically by loadWasteModel():
- *  - "trained": the student's Teachable Machine model in /public/models/waste-sorter/
- *  - "builtin": Google's MobileNet with a waste mapping (src/ai/imagenetWaste.ts),
- *    used while waste-sorter still holds the placeholder model.
+ * Engines, picked automatically by loadWasteModel(), best first:
+ *  - "teachable": the student's Teachable Machine model in /public/models/waste-sorter/
+ *  - "pretrained": MobileNet + the waste head trained by scripts/training (src/ai/heads.ts)
+ *  - "builtin": MobileNet with a hand-made ImageNet-to-waste mapping (src/ai/imagenetWaste.ts)
  *
  * Labels can be just the category ("Wet") or category + item
  * ("Wet - Banana peel"). Item-level labels are grouped by category, and the
  * best item becomes the "item guess" shown in the result sheet.
  */
 import type { WasteLabel } from '../lib/types';
-import { loadModel, predict, type LoadedModel } from './loadModel';
-import { classifyBuiltin, loadBuiltinModel } from './imagenetWaste';
+import { loadModel, predict, type LoadedModel, type Prediction } from './loadModel';
+import { classifyBuiltin, loadBuiltinModel, mapImagenet, runBase } from './imagenetWaste';
+import { CONFIDENCE_THRESHOLD, combineOpinions } from './combine';
 
-/** At or above this confidence we show the result; below it, the user picks. */
-export const CONFIDENCE_THRESHOLD = 0.7;
+export { CONFIDENCE_THRESHOLD };
+import { loadHead, runHead } from './heads';
+
 
 export interface WasteResult {
   category: WasteLabel;
@@ -39,14 +41,14 @@ export function labelToCategory(label: string): WasteLabel | null {
 type Source = HTMLVideoElement | HTMLImageElement | HTMLCanvasElement;
 
 export interface WasteModel {
-  kind: 'trained' | 'builtin';
+  kind: 'teachable' | 'pretrained' | 'builtin';
   /** Classify one image or video frame. Fast enough to call ~5 times a second. */
   classify: (source: Source) => WasteResult;
 }
 
 let wasteModel: Promise<WasteModel> | null = null;
 
-/** Load the student's trained model if one is installed, otherwise the built-in recogniser. */
+/** Load the best waste model that is installed (see the engines above). */
 export function loadWasteModel(onProgress?: (f: number) => void): Promise<WasteModel> {
   if (!wasteModel) {
     wasteModel = (async (): Promise<WasteModel> => {
@@ -55,10 +57,20 @@ export function loadWasteModel(onProgress?: (f: number) => void): Promise<WasteM
         .catch(() => null);
       if (meta && !meta.placeholder) {
         const m = await loadModel('waste-sorter', onProgress);
-        return { kind: 'trained', classify: (src) => classifyTrained(m, src) };
+        return { kind: 'teachable', classify: (src) => classifyTrained(m, src) };
       }
-      const b = await loadBuiltinModel(onProgress);
-      return { kind: 'builtin', classify: (src) => classifyBuiltin(b, src) };
+      const [b, head] = await Promise.all([loadBuiltinModel(onProgress), loadHead('waste-head').catch(() => null)]);
+      if (!head) return { kind: 'builtin', classify: (src) => classifyBuiltin(b, src) };
+      return {
+        kind: 'pretrained',
+        classify: (src) => {
+          // One MobileNet pass gives two opinions (see combineOpinions).
+          const { features, probs } = runBase(b, src);
+          const trained = scoresToResult(runHead(head, features));
+          features.dispose();
+          return combineOpinions(trained, mapImagenet(b, probs));
+        },
+      };
     })();
     wasteModel.catch(() => (wasteModel = null));
   }
@@ -67,10 +79,15 @@ export function loadWasteModel(onProgress?: (f: number) => void): Promise<WasteM
 
 /** Teachable Machine model: add up the label scores per category. */
 function classifyTrained(m: LoadedModel, source: Source): WasteResult {
+  return scoresToResult(predict(m, source));
+}
+
+/** Turn per-label scores into a category, its confidence and (for "Wet - Banana peel" labels) an item. */
+function scoresToResult(predictions: Prediction[]): WasteResult {
   const scores: Record<WasteLabel, number> = { wet: 0, dry: 0, hazardous: 0, notwaste: 0 };
   const bestItem: Partial<Record<WasteLabel, { name: string; p: number }>> = {};
 
-  for (const { label, probability } of predict(m, source)) {
+  for (const { label, probability } of predictions) {
     const cat = labelToCategory(label);
     if (!cat) continue;
     scores[cat] += probability;
