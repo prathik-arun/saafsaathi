@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "firebase emulators:exec --ui --project demo-saafsaathi $([ -d emulator-data ] && echo --import=./emulator-data) --export-on-exit=./emulator-data \"npx vite --port 5173\"",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "lint": "eslint .",
@@ -14,10 +14,10 @@
     "deploy": "npm run build && firebase deploy",
     "emulators:persist": "firebase emulators:start --project demo-saafsaathi $([ -d emulator-data ] && echo --import=./emulator-data) --export-on-exit=./emulator-data",
     "test:rules": "firebase emulators:exec --only firestore --project demo-rules-test 'node --test tests/rules.test.mjs'",
-    "local": "firebase emulators:exec --ui --project demo-saafsaathi $([ -d emulator-data ] && echo --import=./emulator-data) --export-on-exit=./emulator-data \"vite --port 5173\"",
     "postinstall": "node scripts/copy-mediapipe.mjs",
     "seed:live": "node scripts/seed.mjs --live",
-    "seed:clear-live": "node scripts/seed-clear-live.mjs"
+    "seed:clear-live": "node scripts/seed-clear-live.mjs",
+    "dev:app": "vite"
   },
   "dependencies": {
     "@mediapipe/tasks-vision": "^1.0.1",

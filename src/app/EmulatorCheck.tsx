@@ -42,9 +42,8 @@ export function EmulatorCheck() {
     <div role="alert" className="fixed inset-x-0 bottom-0 z-[96] flex items-start gap-3 bg-error px-4 py-3 pb-[calc(env(safe-area-inset-bottom)+12px)] text-white">
       <ServerCrash className="mt-0.5 h-5 w-5 shrink-0" aria-hidden />
       <p className="t-small">
-        <strong>Firebase emulators aren't running</strong>, so sign-in and data won't work. In the project folder run{' '}
-        <code className="rounded bg-black/25 px-1">npm run emulators:persist</code> in a second terminal, or stop this dev server and run{' '}
-        <code className="rounded bg-black/25 px-1">npm run local</code> to start both together.
+        <strong>Firebase emulators aren't running</strong>, so sign-in and data won't work. Stop this server (Ctrl+C) and start
+        everything with <code className="rounded bg-black/25 px-1">npm run dev</code> in the project folder.
       </p>
     </div>
   );

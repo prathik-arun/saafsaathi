@@ -49,22 +49,22 @@ npm install
 npm install -g firebase-tools   # if you don't have it
 ```
 
-1. **Start the Firebase emulators** (Auth, Firestore) in one terminal:
+1. **Start everything** (the Firebase emulators for Auth + Firestore, and the app) with one command:
    ```bash
-   npm run emulators
+   npm run dev
    ```
-   The Emulator UI is at http://localhost:4000.
-2. **Add demo data**: about 50 users across all 18 cities, three weeks of activity (lots of it this week), 100+ reports all over India, the quiz and this week's challenges. **It wipes the emulators' existing users and data first.**
+   Open http://localhost:5173. The Emulator UI is at http://localhost:4000.
+   Press Ctrl+C to stop; your local data is saved to `emulator-data/` and loaded next time.
+2. **Add demo data** (optional, while `npm run dev` is running, in a second terminal): about 50 users
+   across all 18 cities, three weeks of activity, 100+ reports all over India, the quiz and this week's
+   challenges. **It wipes the emulators' existing users and data first.**
    ```bash
    npm run seed
    ```
    Demo logins are listed at the top of `scripts/seed.mjs` (one of them is an admin).
-3. **Start the app** in a second terminal:
-   ```bash
-   npm run dev
-   ```
-   Open http://localhost:5173. On a phone on the same Wi-Fi, use your computer's IP
-   (camera access needs HTTPS or localhost, so for real phone testing deploy to Firebase Hosting).
+
+On a phone on the same Wi-Fi, use your computer's IP (camera access needs HTTPS or localhost, so for
+real phone testing use the deployed site).
 
 The included `.env.development` points `npm run dev` at the emulators (`VITE_USE_EMULATORS=true`).
 
@@ -72,8 +72,8 @@ The included `.env.development` points `npm run dev` at the emulators (`VITE_USE
 
 | Script | What it does |
 |---|---|
-| `npm run local` | Emulators + dev server together in one terminal (saves data on exit) |
-| `npm run dev` | Vite dev server |
+| `npm run dev` | **Start here.** Emulators + app together in one terminal; saves the emulator data when you press Ctrl+C |
+| `npm run dev:app` | Only the app (Vite), if the emulators are already running elsewhere |
 | `npm run emulators` | Firebase emulators (fresh data each time) |
 | `npm run emulators:persist` | Emulators that save data to `./emulator-data` on exit |
 | `npm run seed` | Demo data for the emulators |
