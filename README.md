@@ -124,10 +124,18 @@ report carries a ~5 KB thumbnail for lists and the map. The free tier's 1 GB hol
 | B: Spot Detector | `public/models/spot-detector/` | Garbage dump, Overflowing bin, Blocked drain, Clean area |
 | Face check | `public/models/face/` | MediaPipe BlazeFace (ready-made, Apache 2.0) |
 
-⚠️ **The models in the repo are placeholders.** `scripts/make-placeholder-models.mjs` makes
-tiny models that only look at the average colour of the photo, so the app runs end to end
-before the real models are trained. The Scan screen shows a "Demo AI" banner while a
-placeholder is loaded.
+**Until the student's own Waste Sorter is trained, Scan & Sort uses a built-in recogniser:**
+Google's MobileNet v2 (ImageNet, 1,000 everyday objects such as bottles, fruit, cartons, phones
+and medicine) running in the browser, with a mapping from what it sees to Wet / Dry / Hazardous
+(`src/ai/imagenetWaste.ts`, model files in `public/models/imagenet/`, ~14 MB, cached after the
+first scan). It recognises common items well but has no "battery" class, and it can't know Indian
+sorting rules the way a model trained on your own photos can; when it isn't sure (< 70%) it asks.
+As soon as a trained Teachable Machine model is placed in `public/models/waste-sorter/`, the app
+uses that instead, automatically.
+
+The Spot Detector in `public/models/spot-detector/` is still a placeholder that only looks at
+the average colour of the photo (made by `scripts/make-placeholder-models.mjs`); it only
+pre-fills suggestions the user can change.
 
 ### Retrain and swap a model
 
@@ -142,7 +150,7 @@ placeholder is loaded.
 4. *Train* → *Export Model* → *TensorFlow.js* → *Download*.
 5. Unzip and copy `model.json`, `weights.bin` and `metadata.json` into the model's folder,
    replacing the placeholder files. Each model should be under 5 MB.
-6. Reload the app; the "Demo AI" banner disappears.
+6. Reload the app. Scan & Sort now uses your model instead of the built-in recogniser.
 
 **Using corrections:** when users tap *Wrong? Fix it* and agree to share, the photo and the right
 label are saved. *Admin → Stats → Corrections (ZIP)* downloads them in one folder per label,
@@ -247,6 +255,7 @@ ready for a `/bin` Bin Station page that talks to the ESP32 over Web Serial.
 | vite-plugin-pwa (Workbox) | MIT | Offline + installable app |
 | firebase | Apache 2.0 | Auth, database (incl. photos), hosting |
 | @tensorflow/tfjs | Apache 2.0 | Running the AI models in the browser |
+| MobileNet v2 (ImageNet), via TF Hub | Apache 2.0 | Built-in waste recogniser until the trained model is added |
 | @mediapipe/tasks-vision + BlazeFace model | Apache 2.0 | Face check |
 | leaflet, react-leaflet, leaflet.markercluster, leaflet.heat | BSD-2 / Hippocratic / MIT | Map, clusters, hotspots |
 | OpenStreetMap tiles | ODbL (© OpenStreetMap contributors) | Map background |

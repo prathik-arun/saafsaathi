@@ -289,7 +289,9 @@ service cloud.firestore {
     }
     // Photos shared to retrain the AI: only their owner and admins can see them.
     match /correctionPhotos/{photoId} {
-      allow read, delete: if signedIn() && (resource.data.uid == me() || isAdmin());
+      // Saving first checks whether the photo already exists, so reading a missing one is allowed.
+      allow get: if signedIn() && (resource == null || resource.data.uid == me() || isAdmin());
+      allow list, delete: if signedIn() && (resource.data.uid == me() || isAdmin());
       allow create: if signedIn() && photoOk();
     }
 

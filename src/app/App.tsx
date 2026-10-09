@@ -52,10 +52,18 @@ function Shell() {
   // Splash shows for up to 1.5 s while auth and the AI model load.
   const [minSplash, setMinSplash] = useState(true);
   useEffect(() => {
-    // Start downloading the AI model in the background (TensorFlow.js is loaded lazily).
-    import('../ai/classifyWaste').then((m) => m.loadWasteModel()).catch(() => undefined);
+    // Warm up the waste-sorting AI in the background, but only on a fast connection
+    // without data saver (the built-in model is ~14 MB the first time, then cached).
+    const conn = (navigator as Navigator & { connection?: { saveData?: boolean; effectiveType?: string } }).connection;
+    const fast = !conn?.saveData && (!conn?.effectiveType || conn.effectiveType === '4g');
+    const preload = fast
+      ? setTimeout(() => import('../ai/classifyWaste').then((m) => m.loadWasteModel()).catch(() => undefined), 4000)
+      : undefined;
     const t = setTimeout(() => setMinSplash(false), 1500);
-    return () => clearTimeout(t);
+    return () => {
+      clearTimeout(t);
+      clearTimeout(preload);
+    };
   }, []);
   if (loading && minSplash) return <Splash />;
 

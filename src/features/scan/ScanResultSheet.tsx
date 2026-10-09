@@ -16,7 +16,8 @@ import { CATEGORY_META } from '../../components/meta';
 import { useToast } from '../../components/Toast';
 import { CONFIDENCE_THRESHOLD, type WasteResult } from '../../ai/classifyWaste';
 import { celebrate } from '../../lib/celebrate';
-import { compressPhoto } from '../../lib/image';
+import { blobToImage, compressPhoto } from '../../lib/image';
+import { hasFace } from '../../ai/faceCheck';
 import { currentLanguage } from '../../lib/i18n';
 import type { Category, WasteLabel } from '../../lib/types';
 import { disposalTip, itemName } from '../../data/tips';
@@ -84,9 +85,16 @@ export function ScanResultSheet({ capture, onScanAnother, onClose }: { capture: 
     if (yes) {
       setSharing(true);
       try {
-        await shareCorrection(profile.id, await compressPhoto(capture.photo), ai.category, category);
-        toast.success(t('scan.thanksShare'));
-      } catch {
+        const photo = await compressPhoto(capture.photo);
+        // Shared photos are seen by admins, so never share one that shows a person.
+        if (await hasFace(await blobToImage(photo))) {
+          toast.info(t('scan.shareHasFace'));
+        } else {
+          await shareCorrection(profile.id, photo, ai.category, category);
+          toast.success(t('scan.thanksShare'));
+        }
+      } catch (e) {
+        console.error(e);
         toast.error(t('scan.shareFailed'));
       } finally {
         setSharing(false);

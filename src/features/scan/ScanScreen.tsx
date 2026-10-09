@@ -11,8 +11,7 @@ import { CameraView } from '../../components/Camera';
 import { ProgressBar } from '../../components/ProgressBar';
 import { Button } from '../../components/Button';
 import { useToast } from '../../components/Toast';
-import { classifyWaste, loadWasteModel, type WasteResult } from '../../ai/classifyWaste';
-import type { LoadedModel } from '../../ai/loadModel';
+import { loadWasteModel, type WasteModel, type WasteResult } from '../../ai/classifyWaste';
 import { blobToImage, captureVideoFrame } from '../../lib/image';
 import { perceptualHash } from '../../lib/phash';
 import { ScanResultSheet, type CapturedScan } from './ScanResultSheet';
@@ -24,7 +23,7 @@ export default function ScanScreen() {
   const navigate = useNavigate();
   const toast = useToast();
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [model, setModel] = useState<LoadedModel | null>(null);
+  const [model, setModel] = useState<WasteModel | null>(null);
   const [progress, setProgress] = useState(0);
   const [modelError, setModelError] = useState(false);
   const [live, setLive] = useState<WasteResult | null>(null);
@@ -40,14 +39,23 @@ export default function ScanScreen() {
   };
   useEffect(load, []);
 
-  // Live prediction loop while the camera is showing.
+  // Live prediction loop while the camera is showing. Each prediction waits for
+  // the previous one, so slower phones simply update less often (~5 a second at best).
   useEffect(() => {
     if (!model || capture) return;
-    const id = setInterval(() => {
+    let stopped = false;
+    let timer: ReturnType<typeof setTimeout>;
+    const tick = () => {
+      if (stopped) return;
       const v = videoRef.current;
-      if (v && v.readyState >= 2 && v.videoWidth > 0) setLive(classifyWaste(model, v));
-    }, LIVE_INTERVAL_MS);
-    return () => clearInterval(id);
+      if (v && v.readyState >= 2 && v.videoWidth > 0) setLive(model.classify(v));
+      timer = setTimeout(tick, LIVE_INTERVAL_MS);
+    };
+    tick();
+    return () => {
+      stopped = true;
+      clearTimeout(timer);
+    };
   }, [model, capture]);
 
   const handlePhoto = async (photo: Blob) => {
@@ -55,7 +63,7 @@ export default function ScanScreen() {
     setBusy(true);
     try {
       const img = await blobToImage(photo);
-      const ai = classifyWaste(model, img);
+      const ai = model.classify(img);
       const hash = perceptualHash(img);
       setCapture({ photo, previewUrl: img.src, ai, hash });
     } catch {
@@ -73,7 +81,8 @@ export default function ScanScreen() {
   const close = () => navigate(-1);
 
   const liveLabel =
-    model && live ? (
+    // Only show a live guess when something waste-like is in view.
+    model && live && live.category !== 'notwaste' ? (
       <span>
         {t('scan.looksLike', {
           category: t(`category.${live.category}`),
@@ -110,11 +119,6 @@ export default function ScanScreen() {
             </>
           )}
         </div>
-      )}
-      {model?.placeholder && !capture && (
-        <p className="absolute top-[calc(env(safe-area-inset-top)+72px)] right-4 left-4 z-10 rounded-[12px] bg-warning/90 px-3 py-1.5 text-center t-caption text-black">
-          {t('scan.placeholderModel')}
-        </p>
       )}
       {capture && <ScanResultSheet capture={capture} onScanAnother={() => setCapture(null)} onClose={close} />}
     </CameraView>

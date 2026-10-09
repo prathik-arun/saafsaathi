@@ -193,6 +193,11 @@ describe('photos', () => {
     await assertFails(setDoc(doc(db, 'photos/r9_before'), photo('bob')));
     await assertFails(setDoc(doc(db, 'photos/r9_before'), photo('alice', 'hello')));
   });
+  it('lets me save a correction photo (checking first that it does not exist)', async () => {
+    const db = env.authenticatedContext('alice').firestore();
+    await assertSucceeds(getDoc(doc(db, 'correctionPhotos/new1')));
+    await assertSucceeds(setDoc(doc(db, 'correctionPhotos/new1'), photo('alice')));
+  });
   it('keeps correction photos private to their owner', async () => {
     await env.withSecurityRulesDisabled((ctx) => setDoc(doc(ctx.firestore(), 'correctionPhotos/c1'), { uid: 'alice', data: 'x' }));
     await assertSucceeds(getDoc(doc(env.authenticatedContext('alice').firestore(), 'correctionPhotos/c1')));

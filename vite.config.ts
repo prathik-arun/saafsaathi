@@ -28,10 +28,17 @@ export default defineConfig({
       },
       workbox: {
         // App shell + both AI models are cached so scanning works offline.
-        globPatterns: ['**/*.{js,css,html,svg,png,woff2,json,bin,tflite}'],
+        globPatterns: ['**/*.{js,css,html,svg,png,woff2,json,bin,tflite,txt}'],
+        // The built-in recogniser (14 MB) is cached the first time Scan opens, not at install.
+        globIgnores: ['models/imagenet/**'],
         maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
         navigateFallbackDenylist: [/^\/__/],
         runtimeCaching: [
+          {
+            urlPattern: /\/models\/imagenet\//,
+            handler: 'CacheFirst',
+            options: { cacheName: 'imagenet-model', expiration: { maxEntries: 10 } },
+          },
           {
             // MediaPipe wasm is large, so cache it on first use instead of at install.
             urlPattern: /\/mediapipe\/.*\.(wasm|js)$/,

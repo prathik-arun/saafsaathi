@@ -1,6 +1,11 @@
 /**
  * Model A: Waste Sorter (PRD Section 5).
- * Turns the model's raw label scores into Wet / Dry / Hazardous / Not waste.
+ * Turns a model's label scores into Wet / Dry / Hazardous / Not waste.
+ *
+ * Two engines, picked automatically by loadWasteModel():
+ *  - "trained": the student's Teachable Machine model in /public/models/waste-sorter/
+ *  - "builtin": Google's MobileNet with a waste mapping (src/ai/imagenetWaste.ts),
+ *    used while waste-sorter still holds the placeholder model.
  *
  * Labels can be just the category ("Wet") or category + item
  * ("Wet - Banana peel"). Item-level labels are grouped by category, and the
@@ -8,6 +13,7 @@
  */
 import type { WasteLabel } from '../lib/types';
 import { loadModel, predict, type LoadedModel } from './loadModel';
+import { classifyBuiltin, loadBuiltinModel } from './imagenetWaste';
 
 /** At or above this confidence we show the result; below it, the user picks. */
 export const CONFIDENCE_THRESHOLD = 0.7;
@@ -30,12 +36,37 @@ export function labelToCategory(label: string): WasteLabel | null {
   return null;
 }
 
-export function loadWasteModel(onProgress?: (f: number) => void): Promise<LoadedModel> {
-  return loadModel('waste-sorter', onProgress);
+type Source = HTMLVideoElement | HTMLImageElement | HTMLCanvasElement;
+
+export interface WasteModel {
+  kind: 'trained' | 'builtin';
+  /** Classify one image or video frame. Fast enough to call ~5 times a second. */
+  classify: (source: Source) => WasteResult;
 }
 
-/** Classify one image or video frame. Fast enough to call ~5 times a second. */
-export function classifyWaste(m: LoadedModel, source: HTMLVideoElement | HTMLImageElement | HTMLCanvasElement): WasteResult {
+let wasteModel: Promise<WasteModel> | null = null;
+
+/** Load the student's trained model if one is installed, otherwise the built-in recogniser. */
+export function loadWasteModel(onProgress?: (f: number) => void): Promise<WasteModel> {
+  if (!wasteModel) {
+    wasteModel = (async (): Promise<WasteModel> => {
+      const meta = await fetch('/models/waste-sorter/metadata.json')
+        .then((r) => (r.ok ? r.json() : null))
+        .catch(() => null);
+      if (meta && !meta.placeholder) {
+        const m = await loadModel('waste-sorter', onProgress);
+        return { kind: 'trained', classify: (src) => classifyTrained(m, src) };
+      }
+      const b = await loadBuiltinModel(onProgress);
+      return { kind: 'builtin', classify: (src) => classifyBuiltin(b, src) };
+    })();
+    wasteModel.catch(() => (wasteModel = null));
+  }
+  return wasteModel;
+}
+
+/** Teachable Machine model: add up the label scores per category. */
+function classifyTrained(m: LoadedModel, source: Source): WasteResult {
   const scores: Record<WasteLabel, number> = { wet: 0, dry: 0, hazardous: 0, notwaste: 0 };
   const bestItem: Partial<Record<WasteLabel, { name: string; p: number }>> = {};
 
