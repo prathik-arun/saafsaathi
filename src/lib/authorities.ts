@@ -3,7 +3,8 @@
  * (if we know its official handle) and the state Chief Minister's office.
  *
  * We tag the CM's OFFICE handle, which stays the same when the CM changes.
- * Handles can change: check them before each release. A city with no `civic` handle
+ * Checked against the accounts' own profiles in October 2026; handles can change, so re-check
+ * before each release. A city with no `civic` handle
  * simply tags the state office only.
  */
 interface Authority {
@@ -11,26 +12,26 @@ interface Authority {
   /** Civic body handle, without the @. */
   civic?: string;
   /** Chief Minister's office handle, without the @. */
-  cm: string;
+  cm?: string;
 }
 
 export const AUTHORITIES: Record<string, Authority> = {
-  bengaluru: { state: 'Karnataka', civic: 'BBMPCOMM', cm: 'CMofKarnataka' },
+  bengaluru: { state: 'Karnataka', civic: 'GBA_office', cm: 'CMofKarnataka' },
   mysuru: { state: 'Karnataka', cm: 'CMofKarnataka' },
   mangaluru: { state: 'Karnataka', cm: 'CMofKarnataka' },
   hubballi: { state: 'Karnataka', cm: 'CMofKarnataka' },
   mumbai: { state: 'Maharashtra', civic: 'mybmc', cm: 'CMOMaharashtra' },
   pune: { state: 'Maharashtra', civic: 'PMCPune', cm: 'CMOMaharashtra' },
   delhi: { state: 'Delhi', civic: 'MCD_Delhi', cm: 'CMODelhi' },
-  chennai: { state: 'Tamil Nadu', civic: 'chennaicorp', cm: 'CMOTamilNadu' },
-  coimbatore: { state: 'Tamil Nadu', cm: 'CMOTamilNadu' },
+  chennai: { state: 'Tamil Nadu', civic: 'chennaicorp', cm: 'CMOTamilnadu' },
+  coimbatore: { state: 'Tamil Nadu', cm: 'CMOTamilnadu' },
   hyderabad: { state: 'Telangana', civic: 'GHMCOnline', cm: 'TelanganaCMO' },
   ahmedabad: { state: 'Gujarat', cm: 'CMOGuj' },
   jaipur: { state: 'Rajasthan', cm: 'RajCMO' },
   lucknow: { state: 'Uttar Pradesh', cm: 'CMOfficeUP' },
-  kochi: { state: 'Kerala', cm: 'CMOKerala' },
-  indore: { state: 'Madhya Pradesh', cm: 'CMMadhyaPradesh' },
-  bhopal: { state: 'Madhya Pradesh', cm: 'CMMadhyaPradesh' },
+  kochi: { state: 'Kerala' }, // the Kerala CMO handle was reported missing in 2026: add it back once confirmed
+  indore: { state: 'Madhya Pradesh' }, // official CMO handle not confirmed
+  bhopal: { state: 'Madhya Pradesh' },
 };
 
 /** The "compose a post" link for X, with the civic body and the CM's office tagged. */

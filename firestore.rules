@@ -246,6 +246,7 @@ service cloud.firestore {
           && resource.data.status in ['open', 'verified']
           && request.resource.data.status == 'cleaned'
           && request.resource.data.cleanedBy == me()
+          && resource.data.uid != me()  // you can't clean your own report
           && request.resource.data.cleanedAt == request.time
           && request.resource.data.afterImageUrl == 'photo:' + reportId + '_after'
           && request.resource.data.afterThumbUrl is string

@@ -247,7 +247,11 @@ export default function ReportDetails() {
                   {confirmed ? t('details.youConfirmed') : t('details.seeItToo')}
                 </Button>
               )}
-              <Button onClick={needProfile(() => setCleaning(true))}>{t('details.markCleaned')}</Button>
+              {mine ? (
+                <p className="t-caption text-muted">{t('details.askOthersToClean')}</p>
+              ) : (
+                <Button onClick={needProfile(() => setCleaning(true))}>{t('details.markCleaned')}</Button>
+              )}
             </div>
           )}
           {!report.flagged && (

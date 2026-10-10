@@ -18,7 +18,7 @@ import { useToast } from '../../components/Toast';
 import { REPORT_TYPE_META } from '../../components/meta';
 import { TypeTag } from '../../components/Tags';
 import { hasFace, preloadFaceCheck } from '../../ai/faceCheck';
-import { detectSpot, loadSpotModel } from '../../ai/detectSpot';
+import { CLEAN_THRESHOLD, detectSpot, loadSpotModel } from '../../ai/detectSpot';
 import { celebrate } from '../../lib/celebrate';
 import { getCurrentPosition, nearestCity, nearestLocality, type LatLng } from '../../lib/geo';
 import { blobToImage, captureVideoFrame, compressPhoto } from '../../lib/image';
@@ -46,6 +46,7 @@ export default function ReportScreen() {
   const [faceBlocked, setFaceBlocked] = useState(false);
   const [photo, setPhoto] = useState<Blob | null>(null);
   const [previewUrl, setPreviewUrl] = useState('');
+  const [cleanScore, setCleanScore] = useState(0);
   const [aiType, setAiType] = useState<ReportType | null>(null);
   const [aiConfidence, setAiConfidence] = useState(0);
   const [type, setType] = useState<ReportType>('dump');
@@ -87,11 +88,13 @@ export default function ReportScreen() {
       try {
         const spot = detectSpot(await loadSpotModel(), img);
         setAiType(spot.type);
+        setCleanScore(spot.cleanScore);
         setAiConfidence(spot.confidence);
         setType(spot.type);
         setSeverity(spot.severity);
       } catch {
         setAiType(null); // the user picks the type themselves
+        setCleanScore(0);
       }
       setPhoto(small);
       setPreviewUrl(img.src);
@@ -195,7 +198,9 @@ export default function ReportScreen() {
   }
 
   // ----- Step 2: details -----
-  const canSubmit = !!pin && noPeople && !submitting;
+  // The AI is sure this place is clean: nothing to report.
+  const looksClean = cleanScore >= 0.85;
+  const canSubmit = !!pin && noPeople && !submitting && !looksClean;
   return (
     <div className="mx-auto min-h-dvh max-w-lg bg-bg px-4 pt-[calc(env(safe-area-inset-top)+16px)] pb-10 md:max-w-xl md:my-10 md:min-h-0 md:rounded-[24px] md:border md:border-border md:bg-surface md:px-8 md:py-10 md:shadow-card">
       <h1 className="mb-4 t-h1">{t('report.detailsTitle')}</h1>
@@ -208,6 +213,12 @@ export default function ReportScreen() {
             </Button>
           </div>
         </div>
+
+        {cleanScore >= CLEAN_THRESHOLD && (
+          <p role="alert" className="rounded-[12px] bg-accent-soft p-3 t-small text-accent-text">
+            {looksClean ? t('report.looksClean') : t('report.mightBeClean')}
+          </p>
+        )}
 
         <section>
           <div className="mb-2 flex items-center gap-1.5 t-caption text-muted">

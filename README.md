@@ -79,7 +79,7 @@ The included `.env.development` points `npm run dev` at the emulators (`VITE_USE
 | `npm run seed` | Demo data for the emulators |
 | `npm run seed:live` | Same demo data in the **live** project (fake profiles only, no logins) |
 | `npm run seed:clear-live` | Remove all live demo data and recompute city totals from real activity |
-| `npm run test:rules` | Security-rules tests (anti-cheat, rubric, privacy), 28 cases |
+| `npm run test:rules` | Security-rules tests (anti-cheat, rubric, privacy), 29 cases |
 | `npm run lint` | ESLint |
 | `npm run build` | Type-check + production build |
 | `npm run deploy` | Build and `firebase deploy` |

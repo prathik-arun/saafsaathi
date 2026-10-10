@@ -162,6 +162,10 @@ describe('city rubric', () => {
   it('cleanup gives 30 + 20 (high severity) + 15 (fast) to the spot city', async () => {
     await assertSucceeds(clean(env.authenticatedContext('alice').firestore(), 65));
   });
+  it("blocks cleaning my own report (no points for reporting then cleaning it yourself)", async () => {
+    await env.withSecurityRulesDisabled((ctx) => updateDoc(doc(ctx.firestore(), 'reports/r1'), { uid: 'alice' }));
+    await assertFails(clean(env.authenticatedContext('alice').firestore(), 65));
+  });
   it('cleanup without the fast bonus is also accepted', async () => {
     await assertSucceeds(clean(env.authenticatedContext('alice').firestore(), 50));
   });
