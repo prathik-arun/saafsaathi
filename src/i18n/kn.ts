@@ -208,6 +208,8 @@ const kn: typeof en = {
     reported: 'ವರದಿಯಾಗಿದೆ',
     verified: 'ದೃಢೀಕರಿಸಲಾಗಿದೆ',
     cleaned: 'ಸ್ವಚ್ಛಗೊಳಿಸಲಾಗಿದೆ',
+    location: 'ಸ್ಥಳ',
+    openInMaps: 'Google Maps ನಲ್ಲಿ ತೆರೆಯಿರಿ',
     verifyHint: '3 ದೃಢೀಕರಣಗಳ ನಂತರ ಅಥವಾ ಅಡ್ಮಿನ್ ಮೂಲಕ ದೃಢೀಕೃತ.',
     seeItToo: 'ನನಗೂ ಕಾಣುತ್ತಿದೆ (+5 ಅಂಕ)',
     youConfirmed: 'ನೀವು ದೃಢೀಕರಿಸಿದ್ದೀರಿ',

@@ -209,6 +209,8 @@ const en = {
     reported: 'Reported',
     verified: 'Verified',
     cleaned: 'Cleaned',
+    location: 'Location',
+    openInMaps: 'Open in Google Maps',
     verifyHint: 'Verified after 3 confirmations or by an admin.',
     seeItToo: 'I see it too (+5 pts)',
     youConfirmed: 'You confirmed this',

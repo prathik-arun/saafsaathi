@@ -7,7 +7,7 @@ import { Button, IconButton } from '../../components/Button';
 import type { LatLng } from '../../lib/geo';
 import { pinIcon, TILE_ATTRIBUTION, TILE_URL } from '../map/markers';
 
-export function MiniMap({ at }: { at: LatLng }) {
+export function MiniMap({ at, className = 'h-36' }: { at: LatLng; className?: string }) {
   return (
     <MapContainer
       key={`${at.lat},${at.lng}`}
@@ -20,7 +20,7 @@ export function MiniMap({ at }: { at: LatLng }) {
       touchZoom={false}
       keyboard={false}
       attributionControl={false}
-      className="h-36 w-full rounded-[12px]"
+      className={`${className} w-full rounded-[12px]`}
     >
       <TileLayer url={TILE_URL} />
       <Marker position={at} icon={pinIcon} interactive={false} />

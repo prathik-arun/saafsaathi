@@ -208,6 +208,8 @@ const hi: typeof en = {
     reported: 'रिपोर्ट हुई',
     verified: 'पुष्टि हुई',
     cleaned: 'साफ़ हुई',
+    location: 'स्थान',
+    openInMaps: 'Google Maps में खोलें',
     verifyHint: '3 पुष्टियों या एडमिन के बाद पुष्ट होती है।',
     seeItToo: 'मुझे भी दिखा (+5 अंक)',
     youConfirmed: 'आपने पुष्टि की',

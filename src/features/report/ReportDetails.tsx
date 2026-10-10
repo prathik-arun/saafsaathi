@@ -3,7 +3,7 @@
  * before/after, "I see it too", "Mark as cleaned", Share and Flag.
  * Public page so WhatsApp links work; actions ask non-members to sign in.
  */
-import { ArrowLeft, EyeOff, Flag, Megaphone, Share2, X } from 'lucide-react';
+import { ArrowLeft, EyeOff, Flag, Megaphone, MapPin, Share2, X } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -29,6 +29,7 @@ import { useAuth } from '../auth/AuthProvider';
 import { confirmReport, flagReport, markCleaned } from './reportApi';
 import { useHasConfirmed, useReport } from './useReport';
 import { whatsappShareUrl } from './SuccessView';
+import { MiniMap } from './PinMaps';
 import { xShareUrl } from '../../lib/authorities';
 import { cityName } from '../../lib/cities';
 import { currentLanguage } from '../../lib/i18n';
@@ -195,6 +196,21 @@ export default function ReportDetails() {
             {report.confirmCount > 0 && (
               <p className="mt-1 t-caption text-muted">{t('details.confirmations', { count: report.confirmCount })}</p>
             )}
+          </Card>
+
+          {/* Where the spot is, so anyone opening a shared link can find it. */}
+          <Card className="flex flex-col gap-3">
+            <p className="t-strong">{t('details.location')}</p>
+            <MiniMap at={{ lat: report.lat, lng: report.lng }} className="h-48" />
+            <a
+              href={`https://www.google.com/maps/search/?api=1&query=${report.lat},${report.lng}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex h-11 items-center justify-center gap-2 rounded-[12px] border border-primary t-small font-semibold text-primary"
+            >
+              <MapPin className="h-4 w-4" aria-hidden />
+              {t('details.openInMaps')}
+            </a>
           </Card>
 
           {/* Status timeline */}
