@@ -3,7 +3,7 @@
  * before/after, "I see it too", "Mark as cleaned", Share and Flag.
  * Public page so WhatsApp links work; actions ask non-members to sign in.
  */
-import { ArrowLeft, EyeOff, Flag, Share2, X } from 'lucide-react';
+import { ArrowLeft, EyeOff, Flag, Megaphone, Share2, X } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -29,6 +29,9 @@ import { useAuth } from '../auth/AuthProvider';
 import { confirmReport, flagReport, markCleaned } from './reportApi';
 import { useHasConfirmed, useReport } from './useReport';
 import { whatsappShareUrl } from './SuccessView';
+import { xShareUrl } from '../../lib/authorities';
+import { cityName } from '../../lib/cities';
+import { currentLanguage } from '../../lib/i18n';
 
 export default function ReportDetails() {
   const { id } = useParams();
@@ -58,8 +61,25 @@ export default function ReportDetails() {
           <Share2 className="h-5 w-5" />
         </IconButton>
       )}
+      {report && (
+        <IconButton label={t('report.shareX')} onClick={() => shareToX()} className="border-none">
+          <Megaphone className="h-5 w-5" />
+        </IconButton>
+      )}
     </div>
   );
+
+  const shareToX = () => {
+    if (!report) return;
+    const url = xShareUrl({
+      cityId: report.cityId,
+      cityName: cityName(report.cityId, currentLanguage()),
+      locality: report.locality,
+      type: t(`reportType.${report.type}`),
+      link: `${window.location.origin}/r/${report.id}`,
+    });
+    window.open(url, '_blank', 'noopener');
+  };
 
   const share = async () => {
     if (!report) return;

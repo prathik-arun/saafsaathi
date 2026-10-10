@@ -1,16 +1,19 @@
 /** Step 3 of Report a Spot: green tick, points, View on map / Share on WhatsApp / Done. */
-import { Check } from 'lucide-react';
+import { Check, Megaphone } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Button } from '../../components/Button';
 import { PointsBadge } from '../../components/PointsBadge';
+import { cityName } from '../../lib/cities';
+import { currentLanguage } from '../../lib/i18n';
+import { xShareUrl } from '../../lib/authorities';
 import type { ReportType } from '../../lib/types';
 
 export function whatsappShareUrl(text: string): string {
   return `https://wa.me/?text=${encodeURIComponent(text)}`;
 }
 
-export function SuccessView({ result, type }: { result: { id?: string; points: number; queued: boolean; confirmed?: boolean }; type: ReportType }) {
+export function SuccessView({ result, type, place }: { result: { id?: string; points: number; queued: boolean; confirmed?: boolean }; type: ReportType; place: { cityId: string; locality: string } }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const link = result.id ? `${window.location.origin}/r/${result.id}` : window.location.origin;
@@ -32,6 +35,21 @@ export function SuccessView({ result, type }: { result: { id?: string; points: n
         {!result.queued && (
           <Button variant="secondary" onClick={() => window.open(whatsappShareUrl(shareText), '_blank', 'noopener')}>
             {t('report.shareWhatsapp')}
+          </Button>
+        )}
+        {!result.queued && (
+          <Button
+            variant="secondary"
+            icon={<Megaphone className="h-4 w-4" />}
+            onClick={() =>
+              window.open(
+                xShareUrl({ ...place, cityName: cityName(place.cityId, currentLanguage()), type: t(`reportType.${type}`), link }),
+                '_blank',
+                'noopener',
+              )
+            }
+          >
+            {t('report.shareX')}
           </Button>
         )}
         <Button variant="ghost" onClick={() => navigate('/', { replace: true })}>

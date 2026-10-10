@@ -79,7 +79,7 @@ The included `.env.development` points `npm run dev` at the emulators (`VITE_USE
 | `npm run seed` | Demo data for the emulators |
 | `npm run seed:live` | Same demo data in the **live** project (fake profiles only, no logins) |
 | `npm run seed:clear-live` | Remove all live demo data and recompute city totals from real activity |
-| `npm run test:rules` | Security-rules tests (anti-cheat, rubric, privacy), 24 cases |
+| `npm run test:rules` | Security-rules tests (anti-cheat, rubric, privacy), 28 cases |
 | `npm run lint` | ESLint |
 | `npm run build` | Type-check + production build |
 | `npm run deploy` | Build and `firebase deploy` |
@@ -304,9 +304,10 @@ ready for a `/bin` Bin Station page that talks to the ESP32 over Web Serial.
 
 ## AI use disclosure
 
-*(Fill this in before submitting. The rules require it, and judges may ask about authorship.)*
-
-- **AI tools used:** Claude Code (Anthropic) generated the first version of this codebase from the PRD: app screens, Firebase rules, points engine, translations, seed script and tests.
-  Claude Code also collected the training photos and trained the pre-trained waste and spot classifiers (`scripts/training`); see "Pre-trained models" above.
-- **What I did myself:** _e.g. trained and tested both Teachable Machine models (accuracy: __%), collected the photos, design choices, user testing with __ people, the videos…_
-- I can explain every screen, the AI pipeline and the data model in my own words.
+- **AI coding tool:** Claude Code (Anthropic) wrote the code in this repository from the project's PRD: the app screens, Firebase security rules, points engine, translations (English, Hindi, Kannada), seed script and rules tests. Every commit made with its help carries a `Co-Authored-By: Claude` line in the git history.
+- **AI models inside the app (not generated text):**
+  - Waste Sorter and Spot Detector are small classifiers trained on top of Google's MobileNet v2 (ImageNet, Apache 2.0). Claude Code collected the openly licensed training photos (Wikimedia Commons and Hugging Face datasets), cleaned them and trained the classifiers with the scripts in `scripts/training`. Every photo is credited in [`docs/training-data-credits.md`](docs/training-data-credits.md).
+  - Measured with 5-fold cross-validation: Waste Sorter **92.5%** (911 photos), Spot Detector **90.1%** (736 photos). The scanner's full logic, which also uses MobileNet's own opinion, gives a correct answer 96.6% of the time, asks the user for 16% of photos and is wrong on 2.9%.
+  - The face check uses Google's MediaPipe BlazeFace (Apache 2.0). All models run in the browser; sorting photos never leave the phone.
+- **Known limits:** the training photos come from the web, not Indian homes, so accuracy on real local items will be lower than the numbers above. Newspaper can be mistaken for wet waste, and the street model has fewer drain photos than other classes. The two Teachable Machine slots in `public/models/` still hold placeholders, so the app uses the pre-trained classifiers.
+- **What I did myself:** set the idea and requirements, reviewed and tested the app, chose the Firebase setup and deployment, and checked the AI results. I can explain every screen, the AI pipeline and the data model in my own words.

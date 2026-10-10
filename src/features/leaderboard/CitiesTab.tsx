@@ -2,7 +2,8 @@
  * Cities leaderboard: each city's points (this week or all time), members,
  * and its cleanup rate (share of the last 30 days' reports that are cleaned).
  */
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
+import { ChevronDown } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Card } from '../../components/Card';
 import { EmptyState } from '../../components/EmptyState';
@@ -18,6 +19,7 @@ import { useProfile } from '../auth/AuthProvider';
 import { useRecentReports } from '../map/useReports';
 import { useCities } from './useCities';
 import { AnnouncementEditor } from './AnnouncementEditor';
+import { CityTopMembers } from './CityTopMembers';
 
 export function CitiesTab({ period }: { period: 'week' | 'all' }) {
   const { t } = useTranslation();
@@ -25,6 +27,7 @@ export function CitiesTab({ period }: { period: 'week' | 'all' }) {
   const profile = useProfile();
   const { cities, loading, error } = useCities();
   const { reports } = useRecentReports(30);
+  const [openId, setOpenId] = useState<string | null>(null);
 
   // Cleanup rate per city from the last 30 days of reports.
   const rates = useMemo(() => {
@@ -56,7 +59,12 @@ export function CitiesTab({ period }: { period: 'week' | 'all' }) {
         return (
           <li key={c.id}>
             <Card stripe={c.colour} className="flex flex-col gap-3">
-              <div className="flex items-center gap-3">
+              <button
+                type="button"
+                aria-expanded={openId === c.id}
+                onClick={() => setOpenId(openId === c.id ? null : c.id)}
+                className="flex w-full items-center gap-3 text-left"
+              >
                 <span className="w-5 text-center t-strong text-muted">{i + 1}</span>
                 <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full font-heading text-lg font-bold text-white" style={{ background: c.colour }}>
                   {name[0]}
@@ -75,13 +83,15 @@ export function CitiesTab({ period }: { period: 'week' | 'all' }) {
                   </p>
                 </div>
                 <span className="t-h2">{num(score(c))}</span>
-              </div>
+                <ChevronDown className={`h-5 w-5 shrink-0 text-muted transition-transform ${openId === c.id ? 'rotate-180' : ''}`} />
+              </button>
               <ProgressBar value={score(c) / leader} color={c.colour} label={name} />
               <p className="t-caption text-muted">
                 {rate
                   ? t('leaderboard.cleanupRate', { pct: Math.round((rate.cleaned / rate.total) * 100), cleaned: rate.cleaned, total: rate.total })
                   : t('leaderboard.noReports30')}
               </p>
+              {openId === c.id && <CityTopMembers cityId={c.id} colour={c.colour} period={period} />}
               {c.announcement && <p className="rounded-[12px] bg-bg p-2 t-small">📣 {c.announcement}</p>}
               {profile.role === 'captain' && mine && <AnnouncementEditor cityId={c.id} current={c.announcement ?? ''} />}
             </Card>

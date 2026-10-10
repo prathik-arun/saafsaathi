@@ -20,7 +20,7 @@ import { TypeTag } from '../../components/Tags';
 import { hasFace, preloadFaceCheck } from '../../ai/faceCheck';
 import { detectSpot, loadSpotModel } from '../../ai/detectSpot';
 import { celebrate } from '../../lib/celebrate';
-import { getCurrentPosition, type LatLng } from '../../lib/geo';
+import { getCurrentPosition, nearestCity, nearestLocality, type LatLng } from '../../lib/geo';
 import { blobToImage, captureVideoFrame, compressPhoto } from '../../lib/image';
 import type { ReportDoc, ReportType, Severity, WithId } from '../../lib/types';
 import { useProfile } from '../auth/AuthProvider';
@@ -184,7 +184,14 @@ export default function ReportScreen() {
 
   // ----- Step 3: success -----
   if (step === 'success' && result) {
-    return <SuccessView result={result} type={type} />;
+    const spotCity = pin ? nearestCity(pin) : null;
+    return (
+      <SuccessView
+        result={result}
+        type={type}
+        place={{ cityId: spotCity?.id ?? profile.cityId, locality: spotCity && pin ? nearestLocality(pin, spotCity).name : profile.locality }}
+      />
+    );
   }
 
   // ----- Step 2: details -----
